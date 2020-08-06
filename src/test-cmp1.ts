@@ -1,6 +1,9 @@
-import {html, render} from '../node_modules/lit-html/lit-html.js';
-import{ DiscoverableWebComponent, 
-    IDiscoverableWebComponent,Api} from './lib/@dwc/decorators.js';
+import { html, render } from '../node_modules/lit-html/lit-html.js';
+import{ 
+    DiscoverableWebComponent, 
+    IDiscoverableWebComponent,
+    Api
+} from './lib/@dwc/decorators.js';
 
 import './component-info.js';
 

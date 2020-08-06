@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "tsc": "tsc --watch",
+    "dev": "http-server ./ --port 8080",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -11,5 +13,9 @@
   "dependencies": {
     "lit-html": "^1.2.1",
     "reflect-metadata": "^0.1.13"
+  },
+  "devDependencies": {
+    "http-server": "^0.12.3",
+    "typescript": "^3.9.7"
   }
 }

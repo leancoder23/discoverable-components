@@ -30,7 +30,7 @@ interface IdwcClassMetadata{
  */
 export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
     return function (classOrDescriptor: Constructor<IDiscoverableWebComponent>) {
-        console.log('DiscorableWebComponent decorator called');
+        console.log('[decorators] DiscorableWebComponent decorator called');
         let connectedCallback: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype,'connectedCallback');
         let disconnectedCallback:PropertyDescriptor | undefined = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype,'disconnectedCallback');
 

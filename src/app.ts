@@ -1,8 +1,10 @@
 //import {html, render} from 'https://unpkg.com/lit-html?module';
 import {html, render} from '../node_modules/lit-html/lit-html.js';
-import{ DiscoverableWebComponent, 
+import{ 
+    DiscoverableWebComponent, 
     IDiscoverableWebComponent,
-    Api} from './lib/@dwc/decorators.js';
+    Api
+} from './lib/@dwc/decorators.js';
 
 @DiscoverableWebComponent({
     name:'MyApp',
@@ -44,8 +46,9 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     }
 
     connectedCallback(){    
+        console.log('[app] my app component is loaded in the dom');
+
         this.setAttribute('id',this.uniqueId);
-        console.log('my app component is loaded in the dom');
         this.updateUI();
     }
 

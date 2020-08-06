@@ -1,57 +1,54 @@
-export const componentList = {};
-function setComponentInfo(cmpDescriptor) {
-    if (!Reflect.has(componentList, cmpDescriptor.id))
-        componentList[cmpDescriptor.id] = cmpDescriptor;
-}
-function removeComponentInfo(id) {
-    Reflect.deleteProperty(componentList, id);
-}
-function notifyComponentListUpdated() {
-    const event = new CustomEvent('componentListUpdated');
-    window.dispatchEvent(event);
-}
-export function DiscorableWebComponent(clsMetadata) {
+import * as ComponentManager from './component-manager.js';
+/**
+ * Extend  a component and makes it discoverable to other component
+ * @param dwcClassMetadata
+ */
+export function DiscorableWebComponent(dwcClassMetadata) {
     return function (classOrDescriptor) {
-        var _a;
-        const newClass = (_a = class extends classOrDescriptor {
-            },
-            _a.classMetaData = clsMetadata,
-            _a);
-        let connectedCallbackMethod = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype, 'connectedCallback');
-        if (connectedCallbackMethod) {
-            classOrDescriptor.prototype.connectedCallback = function () {
-                console.log('notifying others');
-                this.newComponentEventHandler = (e) => {
-                    console.log("new component added");
-                    this.updateUI();
-                    console.log(componentList);
-                };
-                setComponentInfo({
-                    id: this.uniqueId,
-                    instance: this,
-                    classMetadata: classOrDescriptor
-                });
-                window.addEventListener("componentListUpdated", this.newComponentEventHandler);
-                notifyComponentListUpdated();
-                //bind to new component event
-                connectedCallbackMethod === null || connectedCallbackMethod === void 0 ? void 0 : connectedCallbackMethod.value.apply(this);
-            };
+        console.log('DiscorableWebComponent decorator called');
+        let connectedCallback = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype, 'connectedCallback');
+        let disconnectedCallback = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype, 'disconnectedCallback');
+        if (!connectedCallback || !disconnectedCallback) {
+            throw new Error('Component cannot be made discoverable, as required methods are not implemented');
         }
-        let disconnectedCallbackMethod = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype, 'disconnectedCallback');
-        console.log(disconnectedCallbackMethod);
-        if (disconnectedCallbackMethod) {
-            classOrDescriptor.prototype.disconnectedCallback = function () {
-                console.log('cleaning up');
-                //bind to new component event
-                window.removeEventListener('componentListUpdated', this.newComponentEventHandler);
-                removeComponentInfo(this.uniqueId);
-                console.log(componentList);
-                notifyComponentListUpdated();
-                disconnectedCallbackMethod === null || disconnectedCallbackMethod === void 0 ? void 0 : disconnectedCallbackMethod.value.apply(this);
-            };
-        }
-        ///window.customElements.define(tagName,newClass);
-        return newClass;
+        let uniqueIdSymbol = Symbol("uniqueId");
+        classOrDescriptor.prototype.connectedCallback = function () {
+            //Add unique identifier for the discoverable component to keep track in component registory
+            this[uniqueIdSymbol] = Math.random().toString(36).substr(2, 9);
+            ComponentManager.registerComponent({
+                identifier: this[uniqueIdSymbol],
+                instance: this,
+                classMetadata: Object.assign({ type: classOrDescriptor }, dwcClassMetadata)
+            });
+            connectedCallback === null || connectedCallback === void 0 ? void 0 : connectedCallback.value.apply(this);
+        };
+        classOrDescriptor.prototype.disconnectedCallback = function () {
+            ComponentManager.deRegisterComponent(this[uniqueIdSymbol]);
+            disconnectedCallback === null || disconnectedCallback === void 0 ? void 0 : disconnectedCallback.value.apply(this);
+        };
+    };
+}
+/**
+ * Expose property metadata to other components
+ * @param dwcPropMetadata
+ */
+export function DiscorableWebComponentProperty(dwcPropMetadata) {
+    return function (target, propertyKey) {
+        ComponentManager.registerProperty(target, propertyKey, dwcPropMetadata);
+    };
+}
+/**
+ * Expose method to other components
+ * @param dwcMethodMetadata
+ */
+export function DiscorableWebComponentMethod(dwcMethodMetadata) {
+    return function (target, methodKey) {
+        ComponentManager.registerMethod(target, methodKey, dwcMethodMetadata);
+    };
+}
+export function Api(dwcMethodMetadata) {
+    return function (target, methodKey) {
+        ComponentManager.registerMethod(target, methodKey, dwcMethodMetadata);
     };
 }
 //# sourceMappingURL=component.js.map

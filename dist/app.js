@@ -4,9 +4,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 //import {html, render} from 'https://unpkg.com/lit-html?module';
 import { html, render } from '../node_modules/lit-html/lit-html.js';
-import { DiscorableWebComponent, componentList } from './lib/@dwc/component.js';
+import { DiscoverableWebComponent, Api } from './lib/@dwc/decorators.js';
 let MyApp = class MyApp extends HTMLElement {
     constructor() {
         console.log('my app constructor is called');
@@ -25,8 +28,8 @@ let MyApp = class MyApp extends HTMLElement {
         return this._counter;
     }
     set counter(val) {
-        this.setAttribute('counter', String(val));
         this._counter = val;
+        this.setAttribute('counter', String(val));
     }
     connectedCallback() {
         this.setAttribute('id', this.uniqueId);
@@ -55,24 +58,6 @@ let MyApp = class MyApp extends HTMLElement {
         //this.setState({ counter: parseInt(event.target.value) });
     }
     updateUI() {
-        let cmp = Object.keys(componentList).map((key) => {
-            let props = Object.getOwnPropertyNames(componentList[key].classMetadata).map((p) => {
-                return p;
-            }).join(',');
-            let methods = Object.getOwnPropertyNames(componentList[key].classMetadata.prototype).map((p) => {
-                return p;
-            }).join(',');
-            return html `
-                ${key}
-                <div>
-                    <strong>Properties:</strong>
-                    ${props}
-                </div>
-                <div>
-                    <strong>Methods:</strong>
-                    ${methods}
-                </div>`;
-        });
         render(html `
                 <style>
                     .container{
@@ -92,25 +77,43 @@ let MyApp = class MyApp extends HTMLElement {
                 </style>
                 <div class="container">
                     <div class="info">
-                        ${cmp}
+                    <cmp-info></cmp-info>
                     </div>
                     <div class="action">
-                        <input id="counterInput" value="${this.counter}" @change=${(event) => this.onInputChange(event)}/>
+                        <input id="counterInput" .value="${String(this.counter)}" @change=${(event) => this.onInputChange(event)}/>
                         <strong>Counter:</strong>${this.counter}
                         <button @click=${(event) => this.onClick(event)}>Counter</button>
                         <button @click=${(event) => this.onClose(event)}>close</button>
                     </div>
-                 
-                    
                 </div>`, this.root);
     }
 };
 MyApp.is = "my-app";
+__decorate([
+    Api({
+        description: 'Counter value'
+    }),
+    __metadata("design:type", Number)
+], MyApp.prototype, "_counter", void 0);
+__decorate([
+    Api(),
+    __metadata("design:type", String),
+    __metadata("design:paramtypes", [])
+], MyApp.prototype, "uniqueId", null);
+__decorate([
+    Api({
+        description: 'Method called on input change'
+    }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], MyApp.prototype, "onInputChange", null);
 MyApp = __decorate([
-    DiscorableWebComponent({
+    DiscoverableWebComponent({
         name: 'MyApp',
         description: 'Test Decorator'
-    })
+    }),
+    __metadata("design:paramtypes", [])
 ], MyApp);
 export { MyApp };
 customElements.define(MyApp.is, MyApp);

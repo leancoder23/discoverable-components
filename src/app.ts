@@ -1,18 +1,23 @@
 //import {html, render} from 'https://unpkg.com/lit-html?module';
 import {html, render} from '../node_modules/lit-html/lit-html.js';
-import{ DiscorableWebComponent, IDiscorableWebComponent,componentList} from './lib/@dwc/component.js';
+import{ DiscoverableWebComponent, 
+    IDiscoverableWebComponent,
+    Api} from './lib/@dwc/decorators.js';
 
-@DiscorableWebComponent({
+@DiscoverableWebComponent({
     name:'MyApp',
     description:'Test Decorator' 
 })
-export class MyApp extends HTMLElement implements IDiscorableWebComponent {
+export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
 
     static is = "my-app";
     static get observedAttributes() {
         return ['counter'];
     }
     private root:ShadowRoot;
+    @Api({
+        description:'Counter value'
+    }) 
     private _counter:number;
     private _id:string;
     constructor(){
@@ -23,6 +28,7 @@ export class MyApp extends HTMLElement implements IDiscorableWebComponent {
         this._id=Math.random().toString(36).substr(2, 9);
        
     }
+    @Api()
     get uniqueId():string{
         return this._id;
     }
@@ -32,9 +38,9 @@ export class MyApp extends HTMLElement implements IDiscorableWebComponent {
     }
 
     set counter(val:number){
-       
-        this.setAttribute('counter',String(val));
         this._counter = val;
+        this.setAttribute('counter',String(val));
+       
     }
 
     connectedCallback(){    
@@ -45,7 +51,7 @@ export class MyApp extends HTMLElement implements IDiscorableWebComponent {
 
     disconnectedCallback() {
     //Perform cleanup here
-    }
+    } 
 
     attributeChangedCallback(name:string, oldValue:any, newValue:any){
         if(oldValue!==newValue)
@@ -64,38 +70,15 @@ export class MyApp extends HTMLElement implements IDiscorableWebComponent {
       node?.remove();
        // this.setState({ counter: this.state.counter + 1 });
     }
-
+    @Api({
+        description:'Method called on input change'
+    }) 
     onInputChange(event:any){  
         
         this.counter = 0 + Number(event.target.value);
         //this.setState({ counter: parseInt(event.target.value) });
     }
-
     updateUI() {
-
-       let cmp = Object.keys(componentList).map((key)=>{
-
-            let props = Object.getOwnPropertyNames(componentList[key].classMetadata).map((p)=>{
-                return p; 
-            }).join(',');
-
-            let methods =Object.getOwnPropertyNames(componentList[key].classMetadata.prototype).map((p)=>{
-                return p; 
-            }).join(',');
-
-            return html `
-                ${key}
-                <div>
-                    <strong>Properties:</strong>
-                    ${props}
-                </div>
-                <div>
-                    <strong>Methods:</strong>
-                    ${methods}
-                </div>`;
-       });
-
-
        render(html`
                 <style>
                     .container{
@@ -115,16 +98,14 @@ export class MyApp extends HTMLElement implements IDiscorableWebComponent {
                 </style>
                 <div class="container">
                     <div class="info">
-                        ${cmp}
+                    <cmp-info></cmp-info>
                     </div>
                     <div class="action">
-                        <input id="counterInput" value="${this.counter}" @change=${(event:any)=>this.onInputChange(event)}/>
+                        <input id="counterInput" .value="${String(this.counter)}" @change=${(event:any)=>this.onInputChange(event)}/>
                         <strong>Counter:</strong>${this.counter}
                         <button @click=${(event:any)=>this.onClick(event)}>Counter</button>
                         <button @click=${(event:any)=>this.onClose(event)}>close</button>
                     </div>
-                 
-                    
                 </div>`,this.root);
     }
 

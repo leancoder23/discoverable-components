@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "lit-html": "^1.2.1"
+    "lit-html": "^1.2.1",
+    "reflect-metadata": "^0.1.13"
   }
 }

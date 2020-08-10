@@ -51,10 +51,16 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
         if(oldValue!==newValue)
             this.updateUI();
     }
-  
+
     @Api({
-        description:'Update UI method'
+        description:'Call me and see what happens'
     })
+    performMagicStuff() {
+        console.log('magic stuff');
+
+        return 'magic response';
+    }
+
     updateUI() {
        render(html`
                 <style>

@@ -32,6 +32,10 @@ let TestCmp = class TestCmp extends HTMLElement {
         if (oldValue !== newValue)
             this.updateUI();
     }
+    performMagicStuff() {
+        console.log('magic stuff');
+        return 'magic response';
+    }
     updateUI() {
         render(html `
                 <style>
@@ -81,12 +85,12 @@ __decorate([
 ], TestCmp.prototype, "uniqueId", null);
 __decorate([
     Api({
-        description: 'Update UI method'
+        description: 'Call me and see what happens'
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], TestCmp.prototype, "updateUI", null);
+], TestCmp.prototype, "performMagicStuff", null);
 TestCmp = __decorate([
     DiscoverableWebComponent({
         name: 'TestCMP',

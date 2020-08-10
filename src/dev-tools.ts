@@ -25,7 +25,8 @@ interface DiscoveredComponent {
     description: string
     props: Array<DiscoveredComponentProperty>
     methods: Array<DiscoveredComponentMethod>
-}
+    instance: any
+}scrollY
 
 class DwcDevTools extends HTMLElement {
     static is = "dwc-dev-tools";
@@ -68,6 +69,14 @@ class DwcDevTools extends HTMLElement {
         this.updateUI();
     }
 
+    updatePropertyValue(comp: DiscoveredComponent, propertyName: string, value: string):void {
+        console.log(`update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
+    }
+
+    executeFunction(comp: DiscoveredComponent, methodName: string):void {
+        console.log(`execute method "${methodName}" on component "${comp.name}"`);
+    }
+
     private getDiscoveredComponents():Array<DiscoveredComponent> {
         let availableComponents = getAllAvailableComponentInfo();
         
@@ -78,6 +87,7 @@ class DwcDevTools extends HTMLElement {
                 description: component.classMetadata.description,
                 props: getAvailableProperties(component.classMetadata.type),
                 methods: getAvailableMethods(component.classMetadata.type),
+                instance: component.instance
             }
         });
     }
@@ -85,7 +95,7 @@ class DwcDevTools extends HTMLElement {
     updateUI() {
         const componentList:Array<DiscoveredComponent> = this.getDiscoveredComponents();
 
-        let renderedComponentList = componentList.map((comp)=>{
+        const renderedComponentList = componentList.map((comp)=>{
             return html `
                 <li class="comp-list-item ${this._selectedComponentId === comp.id ? 'selected' : ''}" @click=${()=>this.selectComponent(comp.id)}>
                     <div class="name">${comp.name}</div>
@@ -94,21 +104,30 @@ class DwcDevTools extends HTMLElement {
             `;
         });
 
-        let renderedPropsList = componentList.find(comp => comp.id === this._selectedComponentId)?.props?.map((prop) => {
+        const foundComponent = componentList.find(comp => comp.id === this._selectedComponentId);
+        const renderedPropsList = foundComponent?.props?.map((prop) => {
             return html`
-                <li>${JSON.stringify(prop)}</li>
+                <li>
+                    <label>${prop.name}:</label>
+                    <input type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement).value); (event.currentTarget as HTMLElement).blur(); }}}>
+                    <div class="description">${prop.description}</div>
+                </li>
             `;
         });
 
-        let renderedMethodList = componentList.find(comp => comp.id === this._selectedComponentId)?.methods?.map((method) => {
+        let renderedMethodList = foundComponent?.methods?.map((method) => {
             return html`
-                <li>${JSON.stringify(method)}</li>
+                <li>
+                    <span class="name">${method.name}()</span><button class="trigger-func-btn" @click=${() => this.executeFunction(foundComponent, method.name)}>call</button>
+                    <div class="description">${method.description}</div>
+                </li>
             `;
         });
 
         render(html`
             <style>
                 .dev-tools-outer {
+                    --primary-color: #4E38F2;
                     --dev-tools-height: 300px;
 
                     box-sizing: border-box;
@@ -211,17 +230,88 @@ class DwcDevTools extends HTMLElement {
                 }
 
                 .component-list > ul > li.selected {
-                    border: 2px solid #4E38F2;
+                    border: 2px solid var(--primary-color);
                 }
 
-                .component-list small {
+                .component-list .description {
                     color: #AAA;
                 }
 
                 .methods-props-list {
                     flex: 1;
                     border-left: 2px solid #f8f8f8;
+                }
+
+                .methods-props-list section {
+                    background: #f8f8f8;
                     padding: 10px;
+                    color: #333;
+                    text-transform: uppercase;
+                    font-size: 0.85em;
+                    letter-spacing: 1px;
+                }
+
+                .props-list {
+                    
+                }
+
+                .props-list, .methods-list {
+                    padding-left: 10px;
+                }
+
+                .props-list > li, .methods-list > li {
+                    list-style: none;
+                    padding: 0 0 5px 0;
+                }
+
+                .props-list > li > input {
+                    position: relative;
+                    font-family: monospace;
+                    font-size: 1.2em;
+                    border: 1px solid transparent;
+                    border-radius: 3px;
+                    padding: 2px 2px;
+                    background: transparent;
+                }
+
+                .props-list > li > label, .methods-list > li > .name {
+                    font-family: monospace;
+                    font-size: 1.2em;
+                    color: var(--primary-color);
+                }
+
+                .props-list > li > input:hover {
+                    border-color: #eee;
+                }
+
+                .props-list > li > input:focus {
+                    outline: 0;
+                    border-color: #ddd;
+                }
+
+                .props-list > li > .description, .methods-list > li > .description {
+                    font-size: 0.8em;
+                    font-family: sans-serif;
+                    color: #AAA;
+                }
+
+                .methods-list .trigger-func-btn {
+                    border: 1px solid var(--primary-color);
+                    border-radius: 3px;
+                    color: var(--primary-color);
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    background: none;
+                    outline: 0;
+                }
+
+                .methods-list > li > .name {
+                    margin-right: 10px;
+                }
+
+                .methods-list .trigger-func-btn:active {
+                    color: white;
+                    background: var(--primary-color);
                 }
             </style>
             <div class="${this._visible ? 'dev-tools-outer' : 'dev-tools-outer closed'}">
@@ -234,12 +324,12 @@ class DwcDevTools extends HTMLElement {
                         </ul>
                     </div>
                     <div style="${!this._selectedComponentId ? 'display: none;' : ''}" class="methods-props-list">
-                        <div>PROPS</div>
-                        <ul>
+                        <section>props</section>
+                        <ul class="props-list">
                             ${renderedPropsList}
                         </ul>
-                        <div>METHODS</div>
-                        <ul>
+                        <section>methods</section>
+                        <ul class="methods-list">
                             ${renderedMethodList}
                         </ul>
                     </div>

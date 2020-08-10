@@ -31,7 +31,14 @@ export function deRegisterComponent(identifier) {
     }
 }
 let propertyMetadataKey = Symbol('property');
-function registerProperty(target, propertyKey, metadataInfo) {
+/**
+ * Register specific property at class metadata level in order to fetch that information later
+ * @param target Class prototype object
+ * @param key  property or method name
+ */
+export function registerProperty(target, propertyKey, metadataInfo) {
+    let descriptor = Reflect.getOwnPropertyDescriptor(target, propertyKey);
+    console.log(propertyKey, descriptor);
     let properties = Reflect.getMetadata(propertyMetadataKey, target);
     let propInfo = Object.assign({ name: propertyKey, type: Reflect.getMetadata("design:type", target, propertyKey) }, metadataInfo);
     if (properties) {
@@ -43,7 +50,12 @@ function registerProperty(target, propertyKey, metadataInfo) {
     }
 }
 let methodMetadataKey = Symbol('method');
-function registerMethod(target, methodKey, metadataInfo) {
+/**
+ * Register specific method  at class metadata level in order to fetch that information later
+ * @param target Class prototype object
+ * @param key  property or method name
+ */
+export function registerMethod(target, methodKey, metadataInfo) {
     let methods = Reflect.getMetadata(methodMetadataKey, target);
     let methodInfo = Object.assign({ name: methodKey }, metadataInfo);
     if (methods) {
@@ -68,6 +80,35 @@ export function registerMethodOrProperty(target, key, metadataInfo) {
     else {
         registerProperty(target, key, metadataInfo);
     }
+}
+/**
+ * Get the property change event name for a specific  component
+ * @param identifier Component unique identifer
+ */
+function getPropertyChangeEventName(identifier) {
+    return "cmp_" + identifier + "_PropertyChanged";
+}
+/**
+ * Fire property change event
+ * @param identifier Component unique id
+ */
+export function firePropertyChangeEvent(identifier) {
+    const event = new CustomEvent(getPropertyChangeEventName(identifier));
+    window.dispatchEvent(event);
+}
+/**
+ * Subscribe to property change event of the specific component
+ * @param identifer Component unique identifer
+ */
+export function subscribePropertyChange(identifer, eventHandler) {
+    window.addEventListener(getPropertyChangeEventName(identifer), eventHandler);
+}
+/**
+ * Unsubscribe property change event of the specific component
+ * @param identifer Component unique identifer
+ */
+export function unsubscribePropertyChange(identifer, eventHandler) {
+    window.removeEventListener(getPropertyChangeEventName(identifer), eventHandler);
 }
 /**
  * Register event listner when a component is added to the registory

@@ -16,14 +16,10 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
     static is = "test-cmp";
     
     private root:ShadowRoot;
-    
-    @Api({
-        description:'Unique id of the rendered component'
-    }) 
-     _id:string;
 
+     _id:string;  
      @Api({
-        description:'Test property'
+        description:'Unique id of the rendered component'
     }) 
      testProp:string;
     constructor(){
@@ -35,7 +31,9 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
        
     }
    
-
+    @Api({
+        description:'Unique id of the rendered component'
+    })
     get uniqueId():string{
         return this._id;
     }

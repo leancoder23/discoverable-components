@@ -1,12 +1,17 @@
 import { html, render } from '../node_modules/lit-html/lit-html.js';
-import { getAllAvailableComponentInfo, addComponentRegistoryUpdateEventListner, removeComponentRegistoryUpdateEventListner, getAvailableMethods, getAvailableProperties } from './lib/@dwc/component-manager.js';
+import { getAllAvailableComponentInfo, addComponentRegistoryUpdateEventListner, removeComponentRegistoryUpdateEventListner, getAvailableMethods, getAvailableProperties, subscribePropertyChange } from './lib/@dwc/component-manager.js';
 class ComponentInfo extends HTMLElement {
     constructor() {
         super();
         console.log('cmp is loaded ');
         this.root = this.attachShadow({ mode: 'open' });
+        this.subscribedPropChange = {};
     }
     handleComponentRegistoryUpdate() {
+        this.updateUI();
+    }
+    handlePropertyChangeEvent() {
+        console.log('Property Change');
         this.updateUI();
     }
     connectedCallback() {
@@ -16,12 +21,27 @@ class ComponentInfo extends HTMLElement {
     disconnectedCallback() {
         removeComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate);
     }
+    updateObjectValue(event, instance, property) {
+        console.log('updating object value ');
+        let v = Number(event.target.value);
+        console.log(instance, property);
+        instance[property] = v;
+    }
     updateUI() {
         let componentList = getAllAvailableComponentInfo();
         let cmp = componentList.map((cmp) => {
+            if (!this.subscribedPropChange[cmp.identifier]) {
+                subscribePropertyChange(cmp.identifier, this.handlePropertyChangeEvent.bind(this));
+                this.subscribedPropChange[cmp.identifier] = true;
+            }
+            console.log(cmp.identifier);
+            console.log(cmp.instance.counter);
             let props = getAvailableProperties(cmp.classMetadata.type).map((p) => {
-                return p.name;
-            }).join(',');
+                return html `<div>
+                
+                    <b>${p.name}:</b><input type="text" .value=${cmp.instance[p.name] || ''} @change="${(event) => this.updateObjectValue(event, cmp.instance, p.name)}" />
+                </div>`;
+            });
             let methods = getAvailableMethods(cmp.classMetadata.type).map((m) => {
                 return m.name;
             }).join(',');

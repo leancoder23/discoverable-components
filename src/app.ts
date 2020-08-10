@@ -1,5 +1,8 @@
 //import {html, render} from 'https://unpkg.com/lit-html?module';
 import {html, render} from '../node_modules/lit-html/lit-html.js';
+
+
+
 import{ 
     DiscoverableWebComponent, 
     IDiscoverableWebComponent,
@@ -17,9 +20,8 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         return ['counter'];
     }
     private root:ShadowRoot;
-    @Api({
-        description:'Counter value'
-    }) 
+   
+   
     private _counter:number;
     private _id:string;
     constructor(){
@@ -30,16 +32,23 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         this._id=Math.random().toString(36).substr(2, 9);
        
     }
+
+
     @Api()
     get uniqueId():string{
         return this._id;
     }
    
+    @Api({
+        description:'Counter value'
+    }) 
     get counter():number{
         return this._counter;
     }
-
+    
+    
     set counter(val:number){
+       
         this._counter = val;
         this.setAttribute('counter',String(val));
        
@@ -100,9 +109,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
                     }
                 </style>
                 <div class="container">
-                    <div class="info">
-                    <cmp-info></cmp-info>
-                    </div>
+
                     <div class="action">
                         <input id="counterInput" .value="${String(this.counter)}" @change=${(event:any)=>this.onInputChange(event)}/>
                         <strong>Counter:</strong>${this.counter}

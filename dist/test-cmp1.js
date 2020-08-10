@@ -71,13 +71,14 @@ __decorate([
         description: 'Unique id of the rendered component'
     }),
     __metadata("design:type", String)
-], TestCmp.prototype, "_id", void 0);
+], TestCmp.prototype, "testProp", void 0);
 __decorate([
     Api({
-        description: 'Test property'
+        description: 'Unique id of the rendered component'
     }),
-    __metadata("design:type", String)
-], TestCmp.prototype, "testProp", void 0);
+    __metadata("design:type", String),
+    __metadata("design:paramtypes", [])
+], TestCmp.prototype, "uniqueId", null);
 __decorate([
     Api({
         description: 'Update UI method'

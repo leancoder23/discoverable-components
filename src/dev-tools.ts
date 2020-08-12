@@ -53,6 +53,8 @@ class DwcDevTools extends HTMLElement {
             }
         });
 
+        window.addEventListener('resize', this.updateUI.bind(this));
+
         this.updateUI();
     }   
 
@@ -61,6 +63,8 @@ class DwcDevTools extends HTMLElement {
      */
     disconnectedCallback () {
         removeComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate);
+
+        window.removeEventListener('resize', this.updateUI.bind(this));
     }
 
     handleComponentRegistoryUpdate():void {

@@ -1,7 +1,11 @@
 import '../../../node_modules/reflect-metadata/Reflect.js';
 import {EventBus} from './event-bus.js';
 
-let _componentRegistory:any={}
+interface IComponentRegistory{
+    [key:string]:IComponentDescriptor;
+} 
+
+let _componentRegistory:IComponentRegistory={}
 const EVENT_COMPONENT_REGISTORY_UPDATED:string='cmp:reg:updated';
 
 
@@ -178,6 +182,38 @@ export function getAvailableMethods(target:Function):any{
 export function getAvailableProperties(target:Function):any{
     return Reflect.getMetadata(propertyMetadataKey,target.prototype);
 }
+
+/**
+ * 
+ * @param identifer Component unique identifier
+ * @param propertyKey property to be set
+ * @param value property value
+ */
+export function setProperties(identifer:string,propertyKey:string,value:any){
+
+    if(Reflect.has(_componentRegistory,identifer)){
+        let cmpInfo = _componentRegistory[identifer];
+        if(Reflect.has(cmpInfo.classMetadata.type.prototype,propertyKey)){
+            Reflect.set(cmpInfo.instance,propertyKey,value);
+        }
+    }
+}
+
+/**
+ * Invoke a method
+ * @param identifer Component unique identifier
+ * @param methodName property to be set
+ * @param args property value
+ */
+export function invokeMethod(identifer:string,methodName:string,...args:any[]){
+    if(Reflect.has(_componentRegistory,identifer)){
+        let cmpInfo = _componentRegistory[identifer];
+        if(Reflect.has(cmpInfo.classMetadata.type.prototype,methodName)){
+            cmpInfo.instance[methodName].apply(cmpInfo.instance,args);
+        }
+    }
+}
+
 
 
 const EVENT_COMPONENT_TRACE_LOG:string='cmp:trace:log';

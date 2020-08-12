@@ -126,6 +126,34 @@ export function getAvailableMethods(target) {
 export function getAvailableProperties(target) {
     return Reflect.getMetadata(propertyMetadataKey, target.prototype);
 }
+/**
+ *
+ * @param identifer Component unique identifier
+ * @param propertyKey property to be set
+ * @param value property value
+ */
+export function setProperties(identifer, propertyKey, value) {
+    if (Reflect.has(_componentRegistory, identifer)) {
+        let cmpInfo = _componentRegistory[identifer];
+        if (Reflect.has(cmpInfo.classMetadata.type.prototype, propertyKey)) {
+            Reflect.set(cmpInfo.instance, propertyKey, value);
+        }
+    }
+}
+/**
+ * Invoke a method
+ * @param identifer Component unique identifier
+ * @param methodName property to be set
+ * @param args property value
+ */
+export function invokeMethod(identifer, methodName, ...args) {
+    if (Reflect.has(_componentRegistory, identifer)) {
+        let cmpInfo = _componentRegistory[identifer];
+        if (Reflect.has(cmpInfo.classMetadata.type.prototype, methodName)) {
+            cmpInfo.instance[methodName].apply(cmpInfo.instance, args);
+        }
+    }
+}
 const EVENT_COMPONENT_TRACE_LOG = 'cmp:trace:log';
 export function fireComponentTraceLog(trace) {
     EventBus.emit(EVENT_COMPONENT_TRACE_LOG, trace);

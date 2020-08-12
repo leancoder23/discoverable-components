@@ -7,7 +7,8 @@ import {getAllAvailableComponentInfo,
     getAvailableProperties,
     subscribePropertyChange,
     subscribeComponentTraceLog,
-    unsubscribeComponentTraceLog
+    unsubscribeComponentTraceLog,
+    setProperties
     
  } from './lib/@dwc/component-manager.js';
 
@@ -50,19 +51,13 @@ class ComponentInfo extends HTMLElement {
         unsubscribeComponentTraceLog();
     } 
     
-    updateObjectValue(event:any,instance:any,property:string){
-        console.log('updating object value ');
+    updateObjectValue(event:any,identifier:string,property:string){
        let v =  Number(event.target.value);
-       console.log(instance,property);
-       instance[property]=v;
+       setProperties(identifier,property,v);
     }
 
     updateUI() {
-
-      
       let componentList = getAllAvailableComponentInfo();
-
-
        let cmp = componentList.map((cmp)=>{
            if(!this.subscribedPropChange[cmp.identifier]){
                subscribePropertyChange(cmp.identifier,this.handlePropertyChangeEvent.bind(this));
@@ -78,7 +73,7 @@ class ComponentInfo extends HTMLElement {
                 
                 return html`<div>
                 
-                    <b>${p.name}:</b><input type="text" .value=${cmp.instance[p.name]||''} @change="${(event:any)=>this.updateObjectValue(event,cmp.instance,p.name)}" />
+                    <b>${p.name}:</b><input type="text" .value=${cmp.instance[p.name]||''} @change="${(event:any)=>this.updateObjectValue(event,cmp.identifier,p.name)}" />
                 </div>` ; 
             });
             

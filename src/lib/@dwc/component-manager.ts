@@ -1,7 +1,9 @@
 import '../../../node_modules/reflect-metadata/Reflect.js';
+import {EventBus} from './event-bus.js';
 
 let _componentRegistory:any={}
-const EVENT_COMPONENT_REGISTORY_UPDATED:string='componentRegistoryUpdatedEvent';
+const EVENT_COMPONENT_REGISTORY_UPDATED:string='component:Registory:Updated';
+
 
 interface IComponentDescriptor{
     /**
@@ -19,8 +21,7 @@ interface IComponentDescriptor{
 }
 
 function notifyComponentRegisteryIsUpdated(){
-    const event = new CustomEvent(EVENT_COMPONENT_REGISTORY_UPDATED);
-    window.dispatchEvent(event);
+    EventBus.emit(EVENT_COMPONENT_REGISTORY_UPDATED);
 } 
 
 /**
@@ -119,7 +120,7 @@ export function registerMethodOrProperty(target:Function,key:string,metadataInfo
  * Get the property change event name for a specific  component
  * @param identifier Component unique identifer
  */
-function getPropertyChangeEventName(identifier:string){
+function getPropertyChangeEventName(identifier:string):string{
     return "cmp_"+identifier+"_PropertyChanged";
 }
 
@@ -128,39 +129,37 @@ function getPropertyChangeEventName(identifier:string){
  * @param identifier Component unique id
  */
 export function firePropertyChangeEvent(identifier:string){
-    const event = new CustomEvent(getPropertyChangeEventName(identifier));
-    window.dispatchEvent(event);
+    EventBus.emit(getPropertyChangeEventName(identifier))
 }
 
 /**
  * Subscribe to property change event of the specific component
  * @param identifer Component unique identifer
  */
-export function subscribePropertyChange(identifer:string,eventHandler:EventListenerOrEventListenerObject){
-    window.addEventListener(getPropertyChangeEventName(identifer),eventHandler);
-    
+export function subscribePropertyChange(identifer:string,eventHandler:Function){
+    EventBus.subscribe(getPropertyChangeEventName(identifer),eventHandler);
 }
 
 /**
  * Unsubscribe property change event of the specific component
  * @param identifer Component unique identifer
  */
-export function unsubscribePropertyChange(identifer:string,eventHandler:EventListenerOrEventListenerObject){
-    window.removeEventListener(getPropertyChangeEventName(identifer),eventHandler);
+export function unsubscribePropertyChange(identifer:string,eventHandler:Function){
+    EventBus.unsubscribe(getPropertyChangeEventName(identifer),eventHandler);
 }
 
 /**
  * Register event listner when a component is added to the registory
  */
-export function addComponentRegistoryUpdateEventListner(eventHandler:EventListenerOrEventListenerObject){
-    window.addEventListener(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
+export function subscribeComponentRegistoryUpdate(eventHandler:Function){
+    EventBus.subscribe(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
 }
 /**
  * Remove component registory update event listner
  * @param eventHandler
  */
-export function removeComponentRegistoryUpdateEventListner(eventHandler:EventListenerOrEventListenerObject){
-    window.removeEventListener(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
+export function unsubscribeComponentRegistoryUpdate(eventHandler:Function){
+    EventBus.unsubscribe(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
 }
 
 /**

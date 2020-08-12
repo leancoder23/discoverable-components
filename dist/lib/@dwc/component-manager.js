@@ -1,9 +1,9 @@
 import '../../../node_modules/reflect-metadata/Reflect.js';
+import { EventBus } from './event-bus.js';
 let _componentRegistory = {};
-const EVENT_COMPONENT_REGISTORY_UPDATED = 'componentRegistoryUpdatedEvent';
+const EVENT_COMPONENT_REGISTORY_UPDATED = 'component:Registory:Updated';
 function notifyComponentRegisteryIsUpdated() {
-    const event = new CustomEvent(EVENT_COMPONENT_REGISTORY_UPDATED);
-    window.dispatchEvent(event);
+    EventBus.emit(EVENT_COMPONENT_REGISTORY_UPDATED);
 }
 /**
  * Register discoverable component to keep track of all component in the DOM
@@ -93,35 +93,34 @@ function getPropertyChangeEventName(identifier) {
  * @param identifier Component unique id
  */
 export function firePropertyChangeEvent(identifier) {
-    const event = new CustomEvent(getPropertyChangeEventName(identifier));
-    window.dispatchEvent(event);
+    EventBus.emit(getPropertyChangeEventName(identifier));
 }
 /**
  * Subscribe to property change event of the specific component
  * @param identifer Component unique identifer
  */
 export function subscribePropertyChange(identifer, eventHandler) {
-    window.addEventListener(getPropertyChangeEventName(identifer), eventHandler);
+    EventBus.subscribe(getPropertyChangeEventName(identifer), eventHandler);
 }
 /**
  * Unsubscribe property change event of the specific component
  * @param identifer Component unique identifer
  */
 export function unsubscribePropertyChange(identifer, eventHandler) {
-    window.removeEventListener(getPropertyChangeEventName(identifer), eventHandler);
+    EventBus.unsubscribe(getPropertyChangeEventName(identifer), eventHandler);
 }
 /**
  * Register event listner when a component is added to the registory
  */
-export function addComponentRegistoryUpdateEventListner(eventHandler) {
-    window.addEventListener(EVENT_COMPONENT_REGISTORY_UPDATED, eventHandler);
+export function subscribeComponentRegistoryUpdate(eventHandler) {
+    EventBus.subscribe(EVENT_COMPONENT_REGISTORY_UPDATED, eventHandler);
 }
 /**
  * Remove component registory update event listner
  * @param eventHandler
  */
-export function removeComponentRegistoryUpdateEventListner(eventHandler) {
-    window.removeEventListener(EVENT_COMPONENT_REGISTORY_UPDATED, eventHandler);
+export function unsubscribeComponentRegistoryUpdate(eventHandler) {
+    EventBus.unsubscribe(EVENT_COMPONENT_REGISTORY_UPDATED, eventHandler);
 }
 /**
  * Returns the component registery

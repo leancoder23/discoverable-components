@@ -2,8 +2,8 @@
 import {html, render, directive} from '../node_modules/lit-html/lit-html.js';
 import {
     getAllAvailableComponentInfo,
-    addComponentRegistoryUpdateEventListner,
-    removeComponentRegistoryUpdateEventListner,
+    subscribeComponentRegistoryUpdate,
+    unsubscribeComponentRegistoryUpdate,
     getAvailableMethods,
     getAvailableProperties
  } from './lib/@dwc/component-manager.js';
@@ -24,7 +24,7 @@ class DwcDevTools extends HTMLElement {
      * Standard Webcomponent lifecycle hook
      */
     connectedCallback () {
-        addComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
         this.updateUI();
     }   
 
@@ -32,7 +32,7 @@ class DwcDevTools extends HTMLElement {
      * Standard Webcomponent lifecycle hook
      */
     disconnectedCallback () {
-        removeComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate);
+        unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
     }
 
     handleComponentRegistoryUpdate():void {

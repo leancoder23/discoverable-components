@@ -1,8 +1,8 @@
 
 import {html, render} from '../node_modules/lit-html/lit-html.js';
 import {getAllAvailableComponentInfo,
-    addComponentRegistoryUpdateEventListner,
-    removeComponentRegistoryUpdateEventListner,
+    subscribeComponentRegistoryUpdate,
+    unsubscribeComponentRegistoryUpdate,
     getAvailableMethods,
     getAvailableProperties,
     subscribePropertyChange,
@@ -36,11 +36,11 @@ class ComponentInfo extends HTMLElement {
     }
 
     connectedCallback(){
-        addComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
         this.updateUI();
     }   
     disconnectedCallback(){
-        removeComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate);
+        unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
     } 
     
     updateObjectValue(event:any,instance:any,property:string){

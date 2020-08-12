@@ -1,5 +1,5 @@
 import { html, render } from '../node_modules/lit-html/lit-html.js';
-import { getAllAvailableComponentInfo, addComponentRegistoryUpdateEventListner, removeComponentRegistoryUpdateEventListner, getAvailableMethods, getAvailableProperties, subscribePropertyChange } from './lib/@dwc/component-manager.js';
+import { getAllAvailableComponentInfo, subscribeComponentRegistoryUpdate, unsubscribeComponentRegistoryUpdate, getAvailableMethods, getAvailableProperties, subscribePropertyChange } from './lib/@dwc/component-manager.js';
 class ComponentInfo extends HTMLElement {
     constructor() {
         super();
@@ -15,11 +15,11 @@ class ComponentInfo extends HTMLElement {
         this.updateUI();
     }
     connectedCallback() {
-        addComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
         this.updateUI();
     }
     disconnectedCallback() {
-        removeComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate);
+        unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
     }
     updateObjectValue(event, instance, property) {
         console.log('updating object value ');

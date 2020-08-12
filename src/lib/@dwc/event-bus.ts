@@ -8,7 +8,7 @@ interface IListener{
     [key:string]:Array<EventReceiver>
 }
 
-class EventBus {
+ class EventBusClass {
     private listeners:IListener;
     constructor(){
         this.listeners={};
@@ -56,6 +56,7 @@ class EventBus {
        */
       async emit(topic:string) {
         const receivers = this.getTopicReceivers(topic);
+        console.log('emiiting from event bus');
         // Run promises
         receivers.map(
         receiver => new Promise((resolve) =>{
@@ -63,3 +64,5 @@ class EventBus {
         }));
     }
   }
+
+  export const EventBus = new EventBusClass();

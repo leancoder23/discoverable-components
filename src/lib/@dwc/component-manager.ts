@@ -1,6 +1,5 @@
 import '../../../node_modules/reflect-metadata/Reflect.js';
 
-
 let _componentRegistory:any={}
 const EVENT_COMPONENT_REGISTORY_UPDATED:string='componentRegistoryUpdatedEvent';
 

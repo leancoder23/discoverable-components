@@ -54,13 +54,12 @@ interface IListener{
        * Emit the event
        * @param {string} topic - name of the event.
        */
-      async emit(topic:string) {
+      async emit(topic:string,...args:any[]) {
         const receivers = this.getTopicReceivers(topic);
-        console.log('emiiting from event bus');
         // Run promises
         receivers.map(
         receiver => new Promise((resolve) =>{
-            resolve(receiver.callback.apply(null));
+            resolve(receiver.callback.apply(this,args));
         }));
     }
   }

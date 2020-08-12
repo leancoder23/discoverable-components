@@ -6,7 +6,8 @@ import {getAllAvailableComponentInfo,
     getAvailableMethods,
     getAvailableProperties,
     subscribePropertyChange,
-    unsubscribePropertyChange
+    subscribeComponentTraceLog,
+    unsubscribeComponentTraceLog
     
  } from './lib/@dwc/component-manager.js';
 
@@ -35,12 +36,18 @@ class ComponentInfo extends HTMLElement {
         this.updateUI();
     }
 
+    handleComponentTraceLog(args:any){
+        console.log(args);
+    }
+
     connectedCallback(){
         subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentTraceLog(this.handleComponentTraceLog);
         this.updateUI();
     }   
     disconnectedCallback(){
         unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
+        unsubscribeComponentTraceLog();
     } 
     
     updateObjectValue(event:any,instance:any,property:string){

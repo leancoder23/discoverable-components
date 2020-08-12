@@ -2,7 +2,7 @@ import '../../../node_modules/reflect-metadata/Reflect.js';
 import {EventBus} from './event-bus.js';
 
 let _componentRegistory:any={}
-const EVENT_COMPONENT_REGISTORY_UPDATED:string='component:Registory:Updated';
+const EVENT_COMPONENT_REGISTORY_UPDATED:string='cmp:reg:updated';
 
 
 interface IComponentDescriptor{
@@ -18,6 +18,16 @@ interface IComponentDescriptor{
      * 
      */
     classMetadata:any;
+
+    /**
+     * Class exposed properties meta infos
+     */
+    properties?:any[];
+
+    /**
+     * Class exposed method infos
+     */
+    methods?:any[];
 }
 
 function notifyComponentRegisteryIsUpdated(){
@@ -31,11 +41,8 @@ function notifyComponentRegisteryIsUpdated(){
  */
 export function registerComponent(descriptor:IComponentDescriptor){
 
-    console.log('properties');
-    console.log(Reflect.getMetadata(propertyMetadataKey,descriptor.classMetadata.type.prototype));
-    
-    console.log('methods');
-    console.log(Reflect.getMetadata(methodMetadataKey,descriptor.classMetadata.type.prototype));
+    descriptor.properties=Reflect.getMetadata(propertyMetadataKey,descriptor.classMetadata.type.prototype);
+    descriptor.methods=Reflect.getMetadata(methodMetadataKey,descriptor.classMetadata.type.prototype);
 
    //do not change  code below
     _componentRegistory[descriptor.identifier] = descriptor;
@@ -56,15 +63,13 @@ export function deRegisterComponent(identifier:string){
 }
 
 
-let propertyMetadataKey = Symbol('property');
+let propertyMetadataKey = Symbol('properties');
 /**
  * Register specific property at class metadata level in order to fetch that information later
  * @param target Class prototype object
  * @param key  property or method name
  */
  export function registerProperty(target:Object,propertyKey:string,metadataInfo?:Object):void{
-    let descriptor: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target,propertyKey);
-    console.log(propertyKey,descriptor);
     let properties: Object[] = Reflect.getMetadata(propertyMetadataKey, target);
     let propInfo:Object = {
         name:propertyKey,
@@ -80,7 +85,7 @@ let propertyMetadataKey = Symbol('property');
     }
 }
 
-let methodMetadataKey = Symbol('method');
+let methodMetadataKey = Symbol('methods');
 /**
  * Register specific method  at class metadata level in order to fetch that information later
  * @param target Class prototype object
@@ -102,26 +107,11 @@ export function registerMethod(target:Object,methodKey:string,metadataInfo?:Obje
 
 
 /**
- * Register specific property or method at class metadata level in order to fetch that information later
- * @param target Class prototype object
- * @param key  property or method name
- */
-export function registerMethodOrProperty(target:Function,key:string,metadataInfo?:Object){
-    //For Method and accessor decorator the property descriptor is provided but for property it is not undefined
-    let descriptor: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target,key);
-     if(typeof(descriptor?.value) =="function"){
-         registerMethod(target,key,metadataInfo);
-     }else{
-         registerProperty(target,key,metadataInfo);
-     }
-}
-
-/**
  * Get the property change event name for a specific  component
  * @param identifier Component unique identifer
  */
 function getPropertyChangeEventName(identifier:string):string{
-    return "cmp_"+identifier+"_PropertyChanged";
+    return `cmp:${identifier}:prop:changed`;
 }
 
 /**
@@ -166,7 +156,9 @@ export function unsubscribeComponentRegistoryUpdate(eventHandler:Function){
  * Returns the component registery
  */
 export function getAllAvailableComponentInfo(){
-    return Object.keys(_componentRegistory).map((identifer)=> _componentRegistory[identifer]);
+    return Object.keys(_componentRegistory).map((identifer)=> {
+       return  _componentRegistory[identifer];
+    });
     //return _componentRegistory;
 }
 
@@ -183,7 +175,29 @@ export function getAvailableMethods(target:Function):any{
  * Returns all available properties
  * @param target 
  */
-
 export function getAvailableProperties(target:Function):any{
     return Reflect.getMetadata(propertyMetadataKey,target.prototype);
 }
+
+
+const EVENT_COMPONENT_TRACE_LOG:string='cmp:trace:log';
+
+export function fireComponentTraceLog(trace:any){
+    EventBus.emit(EVENT_COMPONENT_TRACE_LOG,trace);
+}
+
+/**
+ * Subscribe component trace log
+ * @param eventHandler 
+ */
+export function subscribeComponentTraceLog(eventHandler:Function){
+    EventBus.subscribe(EVENT_COMPONENT_TRACE_LOG,eventHandler);
+}
+/**
+ * Unsubscribe component trace log
+ * @param eventHandler 
+ */
+export function unsubscribeComponentTraceLog(eventHandler?:Function){
+    EventBus.unsubscribe(EVENT_COMPONENT_TRACE_LOG,eventHandler);
+}
+

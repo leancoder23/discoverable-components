@@ -9,22 +9,22 @@ import {
 } from './lib/@dwc/component-manager.js';
 
 
-interface DiscoveredComponentProperty {
+interface IDiscoveredComponentProperty {
     name: string
     description: string
 }
 
-interface DiscoveredComponentMethod {
+interface IDiscoveredComponentMethod {
     name: string
     description: string
 }
 
-interface DiscoveredComponent {
+interface IDiscoveredComponent {
     id: string
     name: string
     description: string
-    props: Array<DiscoveredComponentProperty>
-    methods: Array<DiscoveredComponentMethod>
+    props: Array<IDiscoveredComponentProperty>
+    methods: Array<IDiscoveredComponentMethod>
     instance: any
 }scrollY
 
@@ -33,6 +33,7 @@ class DwcDevTools extends HTMLElement {
     private root:ShadowRoot;
 
     private _visible:boolean = true;
+    private _showDwcGuide = false;
     private _selectedComponentId:string | undefined = undefined;
  
     constructor(){
@@ -45,6 +46,13 @@ class DwcDevTools extends HTMLElement {
      */
     connectedCallback () {
         addComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate.bind(this));
+
+        window.addEventListener("devtools:component-selection", (event: Event) => {
+            if (this._showDwcGuide) {
+                this.selectComponent((event as CustomEvent).detail?.identifier);
+            }
+        });
+
         this.updateUI();
     }   
 
@@ -64,20 +72,27 @@ class DwcDevTools extends HTMLElement {
         this.updateUI();
     }
 
-    selectComponent(id:string):void {
-        this._selectedComponentId = id !== this._selectedComponentId ? id : undefined;
+    toggleDwcGuide():void {
+        this._showDwcGuide = !this._showDwcGuide;
+
         this.updateUI();
     }
 
-    updatePropertyValue(comp: DiscoveredComponent, propertyName: string, value: string):void {
-        console.log(`update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
+    selectComponent(id:string):void {
+        this._selectedComponentId = id;
+
+        this.updateUI();
     }
 
-    executeFunction(comp: DiscoveredComponent, methodName: string):void {
-        console.log(`execute method "${methodName}" on component "${comp.name}"`);
+    updatePropertyValue(comp: IDiscoveredComponent, propertyName: string, value: string):void {
+        console.log(`[dev tools] update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
     }
 
-    private getDiscoveredComponents():Array<DiscoveredComponent> {
+    executeFunction(comp: IDiscoveredComponent, methodName: string):void {
+        console.log(`[dev tools] execute method "${methodName}" on component "${comp.name}"`);
+    }
+
+    private getDiscoveredComponents():Array<IDiscoveredComponent> {
         let availableComponents = getAllAvailableComponentInfo();
         
         return availableComponents.map((component:any) => {
@@ -92,39 +107,144 @@ class DwcDevTools extends HTMLElement {
         });
     }
 
-    updateUI() {
-        const componentList:Array<DiscoveredComponent> = this.getDiscoveredComponents();
+    getSelectedComponent():IDiscoveredComponent | undefined {
+        if (!this._selectedComponentId) {
+            return undefined;
+        }
 
-        const renderedComponentList = componentList.map((comp)=>{
-            return html `
-                <li class="comp-list-item ${this._selectedComponentId === comp.id ? 'selected' : ''}" @click=${()=>this.selectComponent(comp.id)}>
-                    <div class="name">${comp.name}</div>
-                    <div class="description"><small>${comp.description}</small></div>
-                </li>
-            `;
-        });
+        return this.getDiscoveredComponents().find((comp) => comp.id === this._selectedComponentId);
+    }
 
-        const foundComponent = componentList.find(comp => comp.id === this._selectedComponentId);
-        const renderedPropsList = foundComponent?.props?.map((prop) => {
+    private getRenderedDwcGuide (label: string | undefined) {
+        const DISTANCE = 10; // how many px should the guide be larger than the covered element?
+        const dwcGuideBoundedClientRect = document.querySelectorAll(`[dwc-id="${this._selectedComponentId}"]`)[0]?.getBoundingClientRect();
+
+        if (!dwcGuideBoundedClientRect) {
+            return null;
+        }
+
+        const distanceTop = function () {
+            if (dwcGuideBoundedClientRect.top - DISTANCE >= 0) {
+                return DISTANCE;
+            } else {
+                return DISTANCE - (dwcGuideBoundedClientRect.top - DISTANCE) * (-1);
+            }
+        }();
+
+        const distanceBottom = function () {
+            if (dwcGuideBoundedClientRect.height + DISTANCE <= dwcGuideBoundedClientRect.bottom) {
+                return DISTANCE;
+            } else {
+                return DISTANCE - (dwcGuideBoundedClientRect.bottom - dwcGuideBoundedClientRect.height - DISTANCE) * (-1);
+            }
+        }();
+
+        const distanceLeft = function () {
+            if (dwcGuideBoundedClientRect.left - DISTANCE >= 0) {
+                return DISTANCE;
+            } else {
+                return DISTANCE - (dwcGuideBoundedClientRect.left - DISTANCE) * (-1);
+            }
+        }();
+
+        const distanceRight = function () {
+            if (dwcGuideBoundedClientRect.width + DISTANCE <= dwcGuideBoundedClientRect.right) {
+                return DISTANCE;
+            } else {
+                return DISTANCE - (dwcGuideBoundedClientRect.right - dwcGuideBoundedClientRect.width - DISTANCE) * (-1) ;
+            }
+        }();
+        
+        const top = dwcGuideBoundedClientRect.top - distanceTop;
+        const height = dwcGuideBoundedClientRect.height + distanceTop + distanceBottom;
+        const left = dwcGuideBoundedClientRect.left - distanceLeft;
+        const width = dwcGuideBoundedClientRect.width + distanceLeft + distanceRight;
+        
+        //console.log(`distanceLeft: ${distanceLeft}, distanceRight: ${distanceRight}, distanceTop: ${distanceLeft}, distanceBottom: ${distanceRight}, top: ${top}, left: ${left}, width: ${width}, height: ${height}`);
+
+        if (this._showDwcGuide) {
             return html`
-                <li>
-                    <label>${prop.name}:</label>
-                    <input type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement).value); (event.currentTarget as HTMLElement).blur(); }}}>
-                    <div class="description">${prop.description}</div>
-                </li>
-            `;
-        });
+                <style>
+                    .dwc-guide {
+                        box-sizing: border-box;
+                        pointer-events: none;
+                        border: 2px solid #F21879;
+                        border-radius: 8px;
+                        position: absolute;
+                        top: 0; 
+                        left: 0; 
+                        right: auto; 
+                        bottom: auto;
+                    }
 
-        let renderedMethodList = foundComponent?.methods?.map((method) => {
-            return html`
-                <li>
-                    <span class="name">${method.name}()</span><button class="trigger-func-btn" @click=${() => this.executeFunction(foundComponent, method.name)}>call</button>
-                    <div class="description">${method.description}</div>
-                </li>
+                    .dwc-guide-label {
+                        position: absolute;
+                        top: 2px;
+                        left: 8px;
+                        font-family: sans-serif;
+                        font-size: 13px;
+                        padding: 2px 5px;
+                        background: #F21879;
+                        border-radius: 4px;
+                        color: white;
+                        letter-spacing: 0.5px;
+                    }
+                </style>
+                <div class="dwc-guide" style="width: ${width}px; height: ${height}px; transform: translate(${left}px, ${top}px);">
+                    <div class="dwc-guide-label">${label}</div>
+                </div>
             `;
-        });
+        }
 
-        render(html`
+        return html``;
+    }
+
+    private getRenderedToolbar () {
+        return html`
+            <style>
+                .dev-tools-toolbar {
+                    display: flex;
+                    align-items: center;
+                    box-sizing: border-box;
+                    border-bottom: 2px solid #F2F5FA;
+                    text-align: left;
+                    padding: 5px 10px;
+                    height: 35px;
+                }
+
+                .dev-tools-toolbar > .dwc-guide-btn {
+                    cursor: default;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-sizing: border-box;
+                }
+
+                .dev-tools-toolbar > .dwc-guide-btn > .close-icon {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 469.333 469.333' width='512' height='512'%3E%3Cpath d='M234.667 170.667c-35.307 0-64 28.693-64 64s28.693 64 64 64 64-28.693 64-64-28.694-64-64-64z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23F21879'/%3E%3Cpath d='M234.667 74.667C128 74.667 36.907 141.013 0 234.667c36.907 93.653 128 160 234.667 160 106.773 0 197.76-66.347 234.667-160-36.907-93.654-127.894-160-234.667-160zm0 266.666c-58.88 0-106.667-47.787-106.667-106.667S175.787 128 234.667 128s106.667 47.787 106.667 106.667-47.787 106.666-106.667 106.666z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23F21879'/%3E%3C/svg%3E");
+                    background-size: contain;
+                }
+
+                .dev-tools-toolbar > .dwc-guide-btn > .open-icon {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 469.44 469.44' width='512' height='512'%3E%3Cpath d='M231.147 160.373l67.2 67.2.32-3.52c0-35.307-28.693-64-64-64l-3.52.32z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23E3E9ED'/%3E%3Cpath d='M234.667 117.387c58.88 0 106.667 47.787 106.667 106.667 0 13.76-2.773 26.88-7.573 38.933l62.4 62.4c32.213-26.88 57.6-61.653 73.28-101.333-37.013-93.653-128-160-234.773-160-29.867 0-58.453 5.333-85.013 14.933l46.08 45.973c12.052-4.693 25.172-7.573 38.932-7.573zM21.333 59.253l48.64 48.64 9.707 9.707C44.48 145.12 16.64 181.707 0 224.053c36.907 93.653 128 160 234.667 160 33.067 0 64.64-6.4 93.547-18.027l9.067 9.067 62.187 62.293 27.2-27.093L48.533 32.053l-27.2 27.2zM139.307 177.12l32.96 32.96c-.96 4.587-1.6 9.173-1.6 13.973 0 35.307 28.693 64 64 64 4.8 0 9.387-.64 13.867-1.6l32.96 32.96c-14.187 7.04-29.973 11.307-46.827 11.307-58.88 0-106.667-47.787-106.667-106.667 0-16.853 4.267-32.64 11.307-46.933z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23E0E0E0'/%3E%3C/svg%3E");
+                    background-size: contain;
+                }
+            </style>
+
+            <div class="dev-tools-toolbar">
+                <a class="dwc-guide-btn" href="#" @click=${()=>this.toggleDwcGuide()}><div class="${this._showDwcGuide ? 'close-icon' : 'open-icon'}"></div></a>
+            </div>
+        `;
+    }
+
+    private getStyles () {
+        return html`
             <style>
                 .dev-tools-outer {
                     --primary-color: #4E38F2;
@@ -156,14 +276,6 @@ class DwcDevTools extends HTMLElement {
 
                 .dev-tools-outer.closed > .dev-tools-floating-btn {
                     top: -57px;
-                }
-
-                .dev-tools-toolbar {
-                    box-sizing: border-box;
-                    border-bottom: 2px solid #F2F5FA;
-                    text-align: right;
-                    padding: 5px 10px;
-                    height: 35px;
                 }
 
                 .dev-tools-floating-btn {
@@ -314,9 +426,58 @@ class DwcDevTools extends HTMLElement {
                     background: var(--primary-color);
                 }
             </style>
+        `;
+    }
+
+    updateUI() {
+        console.log('[dev tools] update UI');
+
+        const componentList:Array<IDiscoveredComponent> = this.getDiscoveredComponents();
+
+        // select first component if available
+        if (!this.getSelectedComponent() && componentList.length > 0) {
+            this.selectComponent(componentList[0].id);
+        }
+
+        const renderedComponentList = componentList.map((comp)=>{
+            return html `
+                <li class="comp-list-item ${this._selectedComponentId === comp.id ? 'selected' : ''}" @click=${()=>this.selectComponent(comp.id)}>
+                    <div class="name">${comp.name}</div>
+                    <div class="description"><small>${comp.description}</small></div>
+                </li>
+            `;
+        });
+
+        const foundComponent = componentList.find(comp => comp.id === this._selectedComponentId);
+        const renderedPropsList = foundComponent?.props?.map((prop) => {
+            return html`
+                <li>
+                    <label>${prop.name}:</label>
+                    <input type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement).value); (event.currentTarget as HTMLElement).blur(); }}}>
+                    <div class="description">${prop.description}</div>
+                </li>
+            `;
+        });
+
+        let renderedMethodList = foundComponent?.methods?.map((method) => {
+            return html`
+                <li>
+                    <span class="name">${method.name}()</span><button class="trigger-func-btn" @click=${() => this.executeFunction(foundComponent, method.name)}>call</button>
+                    <div class="description">${method.description}</div>
+                </li>
+            `;
+        });
+
+        render(html`
+            ${this.getStyles()}
+
+            ${this.getRenderedDwcGuide(this.getSelectedComponent()?.name)}
+
             <div class="${this._visible ? 'dev-tools-outer' : 'dev-tools-outer closed'}">
                 <a class="dev-tools-floating-btn" href="#" @click=${()=>this.toggleTools()}><div class="${this._visible ? 'close-icon' : 'open-icon'}"></div></a>
-                <div class="dev-tools-toolbar"></div>
+                
+                ${this.getRenderedToolbar()}
+
                 <div class="dev-tools-inner">
                     <div class="component-list">
                         <ul>

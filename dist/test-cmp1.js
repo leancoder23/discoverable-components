@@ -12,14 +12,14 @@ import { DiscoverableWebComponent, Api } from './lib/@dwc/decorators.js';
 import './component-info.js';
 let TestCmp = class TestCmp extends HTMLElement {
     constructor() {
-        console.log('testt component constructor is called');
+        console.log('[test-comp1] component constructor is called');
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this.testProp = '';
         this._id = Math.random().toString(36).substr(2, 9);
     }
-    get uniqueId() {
-        return this._id;
+    get myPropGetter() {
+        return "test string";
     }
     connectedCallback() {
         this.setAttribute('id', this.uniqueId);
@@ -39,11 +39,15 @@ let TestCmp = class TestCmp extends HTMLElement {
     updateUI() {
         render(html `
                 <style>
+                    #shadow-root {
+                        background: #0FF;
+                    }
+
                     .container{
                         margin-top:5px;
                         margin-bottom:5px;
                        padding:10px;
-                       border:1px solid black;
+                       border: 1px solid black;
                     }
                     .info{
                         padding-bottom:10px;
@@ -78,11 +82,11 @@ __decorate([
 ], TestCmp.prototype, "testProp", void 0);
 __decorate([
     Api({
-        description: 'Unique id of the rendered component'
+        description: 'My custom method'
     }),
     __metadata("design:type", String),
     __metadata("design:paramtypes", [])
-], TestCmp.prototype, "uniqueId", null);
+], TestCmp.prototype, "myPropGetter", null);
 __decorate([
     Api({
         description: 'Call me and see what happens'

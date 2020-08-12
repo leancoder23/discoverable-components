@@ -4,7 +4,9 @@ import './dist/dev-tools.js';
 
 const main = document.querySelector('main');
 
+
 const button= document.createElement("button");
+
 button.innerText="Add component";
 button.addEventListener("click",()=>{
     main.appendChild(document.createElement('my-app'));
@@ -12,6 +14,5 @@ button.addEventListener("click",()=>{
 
 main.appendChild(button);
 
-main.appendChild(document.createElement('test-cmp'));
 
-main.appendChild(document.createElement('dwc-dev-tools'));
+main.appendChild(document.createElement('test-cmp'));

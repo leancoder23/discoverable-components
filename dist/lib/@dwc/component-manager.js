@@ -4,6 +4,7 @@ const EVENT_COMPONENT_REGISTORY_UPDATED = 'componentRegistoryUpdatedEvent';
 function notifyComponentRegisteryIsUpdated() {
     const event = new CustomEvent(EVENT_COMPONENT_REGISTORY_UPDATED);
     window.dispatchEvent(event);
+    
 }
 /**
  * Register discoverable component to keep track of all component in the DOM

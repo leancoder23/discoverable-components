@@ -1,8 +1,13 @@
 import '../../../node_modules/reflect-metadata/Reflect.js';
+import {EventBus} from './event-bus.js';
 
+interface IComponentRegistory{
+    [key:string]:IComponentDescriptor;
+} 
 
-let _componentRegistory:any={}
-const EVENT_COMPONENT_REGISTORY_UPDATED:string='componentRegistoryUpdatedEvent';
+let _componentRegistory:IComponentRegistory={}
+const EVENT_COMPONENT_REGISTORY_UPDATED:string='cmp:reg:updated';
+
 
 interface IComponentDescriptor{
     /**
@@ -17,11 +22,20 @@ interface IComponentDescriptor{
      * 
      */
     classMetadata:any;
+
+    /**
+     * Class exposed properties meta infos
+     */
+    properties?:any[];
+
+    /**
+     * Class exposed method infos
+     */
+    methods?:any[];
 }
 
 function notifyComponentRegisteryIsUpdated(){
-    const event = new CustomEvent(EVENT_COMPONENT_REGISTORY_UPDATED);
-    window.dispatchEvent(event);
+    EventBus.emit(EVENT_COMPONENT_REGISTORY_UPDATED);
 } 
 
 /**
@@ -31,11 +45,8 @@ function notifyComponentRegisteryIsUpdated(){
  */
 export function registerComponent(descriptor:IComponentDescriptor){
 
-    console.log('properties');
-    console.log(Reflect.getMetadata(propertyMetadataKey,descriptor.classMetadata.type.prototype));
-    
-    console.log('methods');
-    console.log(Reflect.getMetadata(methodMetadataKey,descriptor.classMetadata.type.prototype));
+    descriptor.properties=Reflect.getMetadata(propertyMetadataKey,descriptor.classMetadata.type.prototype);
+    descriptor.methods=Reflect.getMetadata(methodMetadataKey,descriptor.classMetadata.type.prototype);
 
    //do not change  code below
     _componentRegistory[descriptor.identifier] = descriptor;
@@ -56,15 +67,13 @@ export function deRegisterComponent(identifier:string){
 }
 
 
-let propertyMetadataKey = Symbol('property');
+let propertyMetadataKey = Symbol('properties');
 /**
  * Register specific property at class metadata level in order to fetch that information later
  * @param target Class prototype object
  * @param key  property or method name
  */
  export function registerProperty(target:Object,propertyKey:string,metadataInfo?:Object):void{
-    let descriptor: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target,propertyKey);
-    console.log(propertyKey,descriptor);
     let properties: Object[] = Reflect.getMetadata(propertyMetadataKey, target);
     let propInfo:Object = {
         name:propertyKey,
@@ -80,7 +89,7 @@ let propertyMetadataKey = Symbol('property');
     }
 }
 
-let methodMetadataKey = Symbol('method');
+let methodMetadataKey = Symbol('methods');
 /**
  * Register specific method  at class metadata level in order to fetch that information later
  * @param target Class prototype object
@@ -102,26 +111,11 @@ export function registerMethod(target:Object,methodKey:string,metadataInfo?:Obje
 
 
 /**
- * Register specific property or method at class metadata level in order to fetch that information later
- * @param target Class prototype object
- * @param key  property or method name
- */
-export function registerMethodOrProperty(target:Function,key:string,metadataInfo?:Object){
-    //For Method and accessor decorator the property descriptor is provided but for property it is not undefined
-    let descriptor: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target,key);
-     if(typeof(descriptor?.value) =="function"){
-         registerMethod(target,key,metadataInfo);
-     }else{
-         registerProperty(target,key,metadataInfo);
-     }
-}
-
-/**
  * Get the property change event name for a specific  component
  * @param identifier Component unique identifer
  */
-function getPropertyChangeEventName(identifier:string){
-    return "cmp_"+identifier+"_PropertyChanged";
+function getPropertyChangeEventName(identifier:string):string{
+    return `cmp:${identifier}:prop:changed`;
 }
 
 /**
@@ -129,46 +123,46 @@ function getPropertyChangeEventName(identifier:string){
  * @param identifier Component unique id
  */
 export function firePropertyChangeEvent(identifier:string){
-    const event = new CustomEvent(getPropertyChangeEventName(identifier));
-    window.dispatchEvent(event);
+    EventBus.emit(getPropertyChangeEventName(identifier))
 }
 
 /**
  * Subscribe to property change event of the specific component
  * @param identifer Component unique identifer
  */
-export function subscribePropertyChange(identifer:string,eventHandler:EventListenerOrEventListenerObject){
-    window.addEventListener(getPropertyChangeEventName(identifer),eventHandler);
-    
+export function subscribePropertyChange(identifer:string,eventHandler:Function){
+    EventBus.subscribe(getPropertyChangeEventName(identifer),eventHandler);
 }
 
 /**
  * Unsubscribe property change event of the specific component
  * @param identifer Component unique identifer
  */
-export function unsubscribePropertyChange(identifer:string,eventHandler:EventListenerOrEventListenerObject){
-    window.removeEventListener(getPropertyChangeEventName(identifer),eventHandler);
+export function unsubscribePropertyChange(identifer:string,eventHandler:Function){
+    EventBus.unsubscribe(getPropertyChangeEventName(identifer),eventHandler);
 }
 
 /**
  * Register event listner when a component is added to the registory
  */
-export function addComponentRegistoryUpdateEventListner(eventHandler:EventListenerOrEventListenerObject){
-    window.addEventListener(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
+export function subscribeComponentRegistoryUpdate(eventHandler:Function){
+    EventBus.subscribe(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
 }
 /**
  * Remove component registory update event listner
  * @param eventHandler
  */
-export function removeComponentRegistoryUpdateEventListner(eventHandler:EventListenerOrEventListenerObject){
-    window.removeEventListener(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
+export function unsubscribeComponentRegistoryUpdate(eventHandler:Function){
+    EventBus.unsubscribe(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
 }
 
 /**
  * Returns the component registery
  */
 export function getAllAvailableComponentInfo(){
-    return Object.keys(_componentRegistory).map((identifer)=> _componentRegistory[identifer]);
+    return Object.keys(_componentRegistory).map((identifer)=> {
+       return  _componentRegistory[identifer];
+    });
     //return _componentRegistory;
 }
 
@@ -185,7 +179,61 @@ export function getAvailableMethods(target:Function):any{
  * Returns all available properties
  * @param target 
  */
-
 export function getAvailableProperties(target:Function):any{
     return Reflect.getMetadata(propertyMetadataKey,target.prototype);
 }
+
+/**
+ * 
+ * @param identifer Component unique identifier
+ * @param propertyKey property to be set
+ * @param value property value
+ */
+export function setProperties(identifer:string,propertyKey:string,value:any){
+
+    if(Reflect.has(_componentRegistory,identifer)){
+        let cmpInfo = _componentRegistory[identifer];
+        if(Reflect.has(cmpInfo.classMetadata.type.prototype,propertyKey)){
+            Reflect.set(cmpInfo.instance,propertyKey,value);
+        }
+    }
+}
+
+/**
+ * Invoke a method
+ * @param identifer Component unique identifier
+ * @param methodName property to be set
+ * @param args property value
+ */
+export function invokeMethod(identifer:string,methodName:string,...args:any[]){
+    if(Reflect.has(_componentRegistory,identifer)){
+        let cmpInfo = _componentRegistory[identifer];
+        if(Reflect.has(cmpInfo.classMetadata.type.prototype,methodName)){
+            cmpInfo.instance[methodName].apply(cmpInfo.instance,args);
+        }
+    }
+}
+
+
+
+const EVENT_COMPONENT_TRACE_LOG:string='cmp:trace:log';
+
+export function fireComponentTraceLog(trace:any){
+    EventBus.emit(EVENT_COMPONENT_TRACE_LOG,trace);
+}
+
+/**
+ * Subscribe component trace log
+ * @param eventHandler 
+ */
+export function subscribeComponentTraceLog(eventHandler:Function){
+    EventBus.subscribe(EVENT_COMPONENT_TRACE_LOG,eventHandler);
+}
+/**
+ * Unsubscribe component trace log
+ * @param eventHandler 
+ */
+export function unsubscribeComponentTraceLog(eventHandler?:Function){
+    EventBus.unsubscribe(EVENT_COMPONENT_TRACE_LOG,eventHandler);
+}
+

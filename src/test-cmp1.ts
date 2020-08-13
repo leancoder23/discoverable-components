@@ -1,5 +1,6 @@
 import { html, render } from '../node_modules/lit-html/lit-html.js';
 import{ 
+    Discover,
     DiscoverableWebComponent, 
     IDiscoverableWebComponent,
     Api
@@ -7,8 +8,7 @@ import{
 
 import './component-info.js';
 
-
-@DiscoverableWebComponent({
+@Discover.Component({
     name:'TestCMP',
     description:'Another component'
 })
@@ -18,12 +18,11 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
     private root:ShadowRoot;
 
      _id:string;  
-     @Api({
+     @Discover.Field({
         description:'Unique id of the rendered component'
     }) 
      testProp:string;
     constructor(){
-        console.log('testt component constructor is called');
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this.testProp='';  
@@ -31,7 +30,7 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
        
     }
    
-    @Api({
+    @Discover.Field({
         description:'Unique id of the rendered component'
     })
     get uniqueId():string{
@@ -51,9 +50,9 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
         if(oldValue!==newValue)
             this.updateUI();
     }
-
-    @Api({
-        description:'Call me and see what happens'
+  
+    @Discover.Method({
+        description:'Update UI method'
     })
     performMagicStuff() {
         console.log('magic stuff');

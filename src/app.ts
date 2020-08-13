@@ -1,8 +1,6 @@
 //import {html, render} from 'https://unpkg.com/lit-html?module';
 import {html, render} from '../node_modules/lit-html/lit-html.js';
 
-
-
 import{ 
     DiscoverableWebComponent, 
     IDiscoverableWebComponent,
@@ -20,8 +18,6 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         return ['counter'];
     }
     private root:ShadowRoot;
-   
-   
     private _counter:number;
     private _id:string;
     constructor(){
@@ -32,7 +28,6 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         this._id=Math.random().toString(36).substr(2, 9);
        
     }
-
 
     @Api()
     get uniqueId():string{
@@ -45,7 +40,6 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     get counter():number{
         return this._counter;
     }
-    
     
     set counter(val:number){
        

@@ -1,5 +1,5 @@
 import { html, render } from '../node_modules/lit-html/lit-html.js';
-import { getAllAvailableComponentInfo, addComponentRegistoryUpdateEventListner, removeComponentRegistoryUpdateEventListner, getAvailableMethods, getAvailableProperties, subscribePropertyChange } from './lib/@dwc/component-manager.js';
+import { getAllAvailableComponentInfo, subscribeComponentRegistoryUpdate, unsubscribeComponentRegistoryUpdate, getAvailableMethods, getAvailableProperties, subscribePropertyChange, subscribeComponentTraceLog, unsubscribeComponentTraceLog, setProperties } from './lib/@dwc/component-manager.js';
 class ComponentInfo extends HTMLElement {
     constructor() {
         super();
@@ -14,18 +14,21 @@ class ComponentInfo extends HTMLElement {
         console.log('Property Change');
         this.updateUI();
     }
+    handleComponentTraceLog(args) {
+        console.log(args);
+    }
     connectedCallback() {
-        addComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentTraceLog(this.handleComponentTraceLog);
         this.updateUI();
     }
     disconnectedCallback() {
-        removeComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate);
+        unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
+        unsubscribeComponentTraceLog();
     }
-    updateObjectValue(event, instance, property) {
-        console.log('updating object value ');
+    updateObjectValue(event, identifier, property) {
         let v = Number(event.target.value);
-        console.log(instance, property);
-        instance[property] = v;
+        setProperties(identifier, property, v);
     }
     updateUI() {
         let componentList = getAllAvailableComponentInfo();
@@ -34,12 +37,10 @@ class ComponentInfo extends HTMLElement {
                 subscribePropertyChange(cmp.identifier, this.handlePropertyChangeEvent.bind(this));
                 this.subscribedPropChange[cmp.identifier] = true;
             }
-            console.log(cmp.identifier);
-            console.log(cmp.instance.counter);
             let props = getAvailableProperties(cmp.classMetadata.type).map((p) => {
                 return html `<div>
                 
-                    <b>${p.name}:</b><input type="text" .value=${cmp.instance[p.name] || ''} @change="${(event) => this.updateObjectValue(event, cmp.instance, p.name)}" />
+                    <b>${p.name}:</b><input type="text" .value=${cmp.instance[p.name] || ''} @change="${(event) => this.updateObjectValue(event, cmp.identifier, p.name)}" />
                 </div>`;
             });
             let methods = getAvailableMethods(cmp.classMetadata.type).map((m) => {

@@ -80,6 +80,7 @@ interface IdwcApiMetadata{
     description:string
 }
 
+
 /**
  * Expose a method or property as API, so that other component can interact with the component using this methods or property
  * @param dwcMethodMetadata 
@@ -88,6 +89,19 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
     return function(target:any,key:string,descriptor?:PropertyDescriptor|undefined):void{
         //let descriptor: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target,key);
         if(typeof(descriptor?.value) =="function"){
+            let originalMethod = descriptor.value;
+            descriptor.value=function(this:any,...args:any[]){
+                let result= originalMethod.apply(this,args);
+                //now fire a method to log the calls
+                ComponentManager.fireComponentTraceLog({
+                    name:'Method invoked',
+                    identifer:this[uniqueIdSymbol],
+                    method:key,
+                    args:args,
+                    result:result
+                });
+                return result;
+            }
             ComponentManager.registerMethod(target,key,dwcApiMetadata);
         }else{
             //override property setter to get add reactivity behaviours
@@ -99,8 +113,17 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
                 const setter = function(this:any,val:any) {
                     if(this[propPrivateKey]!=val){
                         this[propPrivateKey]= val;
+                        
+                        ComponentManager.fireComponentTraceLog({
+                            name:'Property Change',
+                            identifer:this[uniqueIdSymbol],
+                            property:key,
+                            value:val
+                        }); 
+
                         //Call the change event on the object
-                        ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol])
+                        ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol]);
+                        
                     }
                 };
 
@@ -114,6 +137,14 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
                     let originalSetter = descriptor.set;
                     descriptor.set=function(this:any,val){
                         originalSetter.call(this,val);
+
+                        ComponentManager.fireComponentTraceLog({
+                            name:'Property Change',
+                            identifer:this[uniqueIdSymbol],
+                            property:key,
+                            value:val
+                        }); 
+
                         ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol]);
                     }
                     Object.defineProperty(target, key, descriptor);
@@ -124,4 +155,14 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
         }
 
     }
+}
+
+
+/**
+ * Exposes various Discoverable methods
+ */
+export const Discover = {
+    Component:DiscoverableWebComponent,
+    Method:Api,
+    Field:Api
 }

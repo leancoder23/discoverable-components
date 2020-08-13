@@ -12,6 +12,7 @@ import {
 interface IDiscoveredComponentProperty {
     name: string
     description: string
+    type: Function
 }
 
 interface IDiscoveredComponentMethod {
@@ -26,7 +27,29 @@ interface IDiscoveredComponent {
     props: Array<IDiscoveredComponentProperty>
     methods: Array<IDiscoveredComponentMethod>
     instance: any
-}scrollY
+}
+
+enum DetailsPane {
+    DISCOVERY = 'DISCOVERY',
+    HISTORY = 'HISTORY'
+}
+
+enum HistoryItemType {
+    METHOD_CALL = 'METHOD',
+    PROPERTY_CHANGE = 'PROPERTY_CHANGE'
+}
+
+interface HistoryItem {
+    date: Date,
+    senderComponentName: string,
+    senderComponentId?: string,
+    receiverComponentName: string,
+    receiverComponentId?: string,
+    type: HistoryItemType,
+    subject: string,
+    input?: string,
+    output?: string
+}
 
 class DwcDevTools extends HTMLElement {
     static is = "dwc-dev-tools";
@@ -34,7 +57,17 @@ class DwcDevTools extends HTMLElement {
 
     private _visible:boolean = true;
     private _showDwcGuide = false;
+    private _selectedDetailsPane = DetailsPane.DISCOVERY;
     private _selectedComponentId:string | undefined = undefined;
+    private _historyItems:HistoryItem[] = [{
+        date: new Date(),
+        senderComponentName: "DevTools",
+        receiverComponentId: "fsdfsd",
+        receiverComponentName: "myComponentName",
+        subject: "performMagicStuff()",
+        type: HistoryItemType.METHOD_CALL,
+        output: "Test output"
+    }];
  
     constructor(){
         super();
@@ -82,6 +115,16 @@ class DwcDevTools extends HTMLElement {
         this.updateUI();
     }
 
+    selectDetailsPane(detailsPane: DetailsPane) {
+        if (this._selectedDetailsPane === detailsPane) {
+            return;
+        }
+
+        this._selectedDetailsPane = detailsPane;
+
+        this.updateUI();
+    }
+
     selectComponent(id:string):void {
         this._selectedComponentId = id;
 
@@ -94,6 +137,24 @@ class DwcDevTools extends HTMLElement {
 
     executeFunction(comp: IDiscoveredComponent, methodName: string):void {
         console.log(`[dev tools] execute method "${methodName}" on component "${comp.name}"`);
+
+        const out = comp.instance[methodName]();
+
+        this.logHistoryItem({
+            date: new Date(),
+            senderComponentName: "DevTools",
+            receiverComponentId: comp.id,
+            receiverComponentName: comp.name,
+            subject: methodName + "()",
+            type: HistoryItemType.METHOD_CALL,
+            output: out
+        });
+    }
+
+    logHistoryItem(historyItem: HistoryItem) {
+        this._historyItems.push(historyItem);
+
+        this.updateUI();
     }
 
     private getDiscoveredComponents():Array<IDiscoveredComponent> {
@@ -208,15 +269,25 @@ class DwcDevTools extends HTMLElement {
             <style>
                 .dev-tools-toolbar {
                     display: flex;
-                    align-items: center;
                     box-sizing: border-box;
-                    border-bottom: 2px solid #F2F5FA;
+                    border-bottom: 2px solid #f0f0f0;
                     text-align: left;
-                    padding: 5px 10px;
                     height: 35px;
                 }
 
-                .dev-tools-toolbar > .dwc-guide-btn {
+                .dev-tools-toolbar > .toolbar-left, .dev-tools-toolbar > .toolbar-right {
+                    box-sizing: border-box;
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    padding: 5px 10px;
+                }
+
+                .dev-tools-toolbar > .toolbar-right {
+                    justify-content: center;
+                }
+
+                .dev-tools-toolbar .toolbar-btn {
                     cursor: default;
                     display: flex;
                     align-items: center;
@@ -224,7 +295,7 @@ class DwcDevTools extends HTMLElement {
                     box-sizing: border-box;
                 }
 
-                .dev-tools-toolbar > .dwc-guide-btn > .close-icon {
+                .dwc-guide-btn > .close-icon {
                     display: inline-block;
                     width: 20px;
                     height: 20px;
@@ -232,18 +303,123 @@ class DwcDevTools extends HTMLElement {
                     background-size: contain;
                 }
 
-                .dev-tools-toolbar > .dwc-guide-btn > .open-icon {
+                .dwc-guide-btn > .open-icon {
                     display: inline-block;
                     width: 20px;
                     height: 20px;
                     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 469.44 469.44' width='512' height='512'%3E%3Cpath d='M231.147 160.373l67.2 67.2.32-3.52c0-35.307-28.693-64-64-64l-3.52.32z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23E3E9ED'/%3E%3Cpath d='M234.667 117.387c58.88 0 106.667 47.787 106.667 106.667 0 13.76-2.773 26.88-7.573 38.933l62.4 62.4c32.213-26.88 57.6-61.653 73.28-101.333-37.013-93.653-128-160-234.773-160-29.867 0-58.453 5.333-85.013 14.933l46.08 45.973c12.052-4.693 25.172-7.573 38.932-7.573zM21.333 59.253l48.64 48.64 9.707 9.707C44.48 145.12 16.64 181.707 0 224.053c36.907 93.653 128 160 234.667 160 33.067 0 64.64-6.4 93.547-18.027l9.067 9.067 62.187 62.293 27.2-27.093L48.533 32.053l-27.2 27.2zM139.307 177.12l32.96 32.96c-.96 4.587-1.6 9.173-1.6 13.973 0 35.307 28.693 64 64 64 4.8 0 9.387-.64 13.867-1.6l32.96 32.96c-14.187 7.04-29.973 11.307-46.827 11.307-58.88 0-106.667-47.787-106.667-106.667 0-16.853 4.267-32.64 11.307-46.933z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23E0E0E0'/%3E%3C/svg%3E");
                     background-size: contain;
                 }
+
+                .discovery-pane-btn > .inactive-icon {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 25.904 25.904' width='512' height='512'%3E%3Cpath data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%23E0E0E0' d='M9.012 12h10v2h-10z'/%3E%3Cpath d='M13.022 22H3.012c-.551 0-1-.449-1-1V4h20v8.435c.414-.203.867-.322 1.343-.322.224 0 .443.028.657.075V3c0-1.657-1.344-3-3-3h-18c-1.656 0-3 1.343-3 3v18c0 1.656 1.344 3 3 3h9.425l.585-2z' data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%23E0E0E0'/%3E%3Cpath data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%23E0E0E0' d='M9.012 8h10v2h-10zM9.012 18h7.096l2.01-2H9.012zM5.012 12h2v2h-2zM5.012 8h2v2h-2zM5.012 16h2v2h-2z'/%3E%3Cg%3E%3Cpath d='M25.576 15.934l-1.517-1.52c-.418-.421-1.094-.424-1.507-.009l-1.22 1.228 3.03 3.043 1.221-1.229c.415-.415.412-1.093-.007-1.513zM15.357 21.502c-.067.055-.124.123-.15.213L14.15 25.33a.4478.4478 0 00.112.443c.086.085.2.131.317.131.042 0 .085-.006.126-.019l3.602-1.062c.084-.024.149-.076.204-.138l4.939-4.915-3.163-3.175-4.93 4.907zm.479 3.116l-.422-.425.599-2.047 1.532.316.303 1.562-2.012.594z' data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%23E0E0E0'/%3E%3C/g%3E%3C/svg%3E");
+                    background-size: contain;
+                }
+
+                .discovery-pane-btn > .active-icon {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 25.904 25.904' width='512' height='512'%3E%3Cpath data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%234E38F2' d='M9.012 12h10v2h-10z'/%3E%3Cpath d='M13.022 22H3.012c-.551 0-1-.449-1-1V4h20v8.435c.414-.203.867-.322 1.343-.322.224 0 .443.028.657.075V3c0-1.657-1.344-3-3-3h-18c-1.656 0-3 1.343-3 3v18c0 1.656 1.344 3 3 3h9.425l.585-2z' data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%234E38F2'/%3E%3Cpath data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%234E38F2' d='M9.012 8h10v2h-10zM9.012 18h7.096l2.01-2H9.012zM5.012 12h2v2h-2zM5.012 8h2v2h-2zM5.012 16h2v2h-2z'/%3E%3Cg%3E%3Cpath d='M25.576 15.934l-1.517-1.52c-.418-.421-1.094-.424-1.507-.009l-1.22 1.228 3.03 3.043 1.221-1.229c.415-.415.412-1.093-.007-1.513zM15.357 21.502c-.067.055-.124.123-.15.213L14.15 25.33a.4478.4478 0 00.112.443c.086.085.2.131.317.131.042 0 .085-.006.126-.019l3.602-1.062c.084-.024.149-.076.204-.138l4.939-4.915-3.163-3.175-4.93 4.907zm.479 3.116l-.422-.425.599-2.047 1.532.316.303 1.562-2.012.594z' data-original='%23030104' class='active-path' data-old_color='%23030104' fill='%234E38F2'/%3E%3C/g%3E%3C/svg%3E");
+                    background-size: contain;
+                }
+
+                .history-pane-btn > .inactive-icon {
+                    display: inline-block;
+                    width: 24px;
+                    height: 24px;
+                    margin-left: 20px;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 448' width='512' height='512'%3E%3Cpath data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23E0E0E0' d='M234.667 138.667v106.666l91.306 54.187 15.36-25.92-74.666-44.267v-90.666z'/%3E%3Cpath d='M255.893 32C149.76 32 64 117.973 64 224H0l83.093 83.093 1.493 3.093L170.667 224h-64c0-82.453 66.88-149.333 149.333-149.333S405.333 141.547 405.333 224 338.453 373.333 256 373.333c-41.28 0-78.507-16.853-105.493-43.84L120.32 359.68C154.987 394.453 202.88 416 255.893 416 362.027 416 448 330.027 448 224S362.027 32 255.893 32z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23E0E0E0'/%3E%3C/svg%3E");
+                    background-size: contain;
+                }
+
+                .history-pane-btn > .active-icon {
+                    display: inline-block;
+                    width: 24px;
+                    height: 24px;
+                    margin-left: 20px;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 448' width='512' height='512'%3E%3Cpath data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23F24730' d='M234.667 138.667v106.666l91.306 54.187 15.36-25.92-74.666-44.267v-90.666z'/%3E%3Cpath d='M255.893 32C149.76 32 64 117.973 64 224H0l83.093 83.093 1.493 3.093L170.667 224h-64c0-82.453 66.88-149.333 149.333-149.333S405.333 141.547 405.333 224 338.453 373.333 256 373.333c-41.28 0-78.507-16.853-105.493-43.84L120.32 359.68C154.987 394.453 202.88 416 255.893 416 362.027 416 448 330.027 448 224S362.027 32 255.893 32z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%23F24730'/%3E%3C/svg%3E");
+                    background-size: contain;
+                }
+
+                @media (min-width: 1300px) {
+                    .dev-tools-toolbar > .toolbar-right {
+                        display: none;
+                    }
+                }
             </style>
 
             <div class="dev-tools-toolbar">
-                <a class="dwc-guide-btn" href="#" @click=${()=>this.toggleDwcGuide()}><div class="${this._showDwcGuide ? 'close-icon' : 'open-icon'}"></div></a>
+                <div class="toolbar-left">
+                    <a class="toolbar-btn dwc-guide-btn" href="#" @click=${()=>this.toggleDwcGuide()}><div class="${this._showDwcGuide ? 'close-icon' : 'open-icon'}"></div></a>
+                </div>
+                <div class="toolbar-right">
+                    <a class="toolbar-btn discovery-pane-btn" href="#" @click=${()=>this.selectDetailsPane(DetailsPane.DISCOVERY)}><div class="${this._selectedDetailsPane === DetailsPane.DISCOVERY ? 'active-icon' : 'inactive-icon'}"></div></a>
+                    <a class="toolbar-btn history-pane-btn" href="#" @click=${()=>this.selectDetailsPane(DetailsPane.HISTORY)}><div class="${this._selectedDetailsPane === DetailsPane.HISTORY ? 'active-icon' : 'inactive-icon'}"></div></a>
+                </div>
             </div>
+        `;
+    }
+
+    private getRenderedHistory () {
+        const renderedHistoryItems = this._historyItems.slice().reverse().filter(item => item.receiverComponentId === this._selectedComponentId).map((historyItem: HistoryItem) => {
+            return html`
+                <li class="history-item">
+                    <div class="history-item-date">${new Intl.DateTimeFormat('default', {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'}).format(historyItem.date)} by <a href="#">${historyItem.senderComponentName}</a></div>
+                    <div class="history-item-badge">M</div><div class="history-item-subject">${historyItem.subject}</div>
+                    <div class="history-item-output">&rarr; ${historyItem.output}</div>
+                </li>
+            `;
+        });
+
+        return html`
+            <style>
+                .history-items {
+                    --history-color: #F24730;
+
+                    margin: 20px 10px;
+                    padding: 0;
+                    list-style: none;
+                }
+
+                .history-item {
+                    margin-bottom: 10px;
+                }
+
+                .history-item-date {
+                    font-size: 0.8em;
+                    font-family: sans-serif;
+                    color: #AAA;
+                    letter-spacing: 0.3px;
+                }
+
+                .history-item-badge {
+                    display: inline-block;
+                    margin-right: 10px;
+                    padding: 1px 5px;
+                    background: var(--history-color);
+                    color: white;
+                    border-radius: 3px;
+                    font-size: 0.7em;
+                }
+
+                .history-item-subject {
+                    display: inline-block;
+                    font-family: monospace;
+                    color: var(--history-color);
+                    font-size: 1.2em;
+                }
+
+                .history-item-output {
+                    font-size: 0.9em;
+                }
+            </style>
+            <ul class="history-items">
+                ${renderedHistoryItems}
+            </ul>
         `;
     }
 
@@ -353,18 +529,29 @@ class DwcDevTools extends HTMLElement {
                     color: #AAA;
                 }
 
-                .methods-props-list {
+                .details-pane {
                     flex: 1;
-                    border-left: 2px solid #f8f8f8;
+                    border-left: 2px solid #f0f0f0;
+                    overflow-y: scroll;
                 }
 
-                .methods-props-list section {
+                .details-pane section {
                     background: #f8f8f8;
                     padding: 10px;
                     color: #333;
                     text-transform: uppercase;
                     font-size: 0.85em;
                     letter-spacing: 1px;
+                }
+
+                @media (max-width: 1299px) {
+                    .details-pane {
+                        display: none;
+                    }
+
+                    .details-pane.selected {
+                        display: initial;
+                    }
                 }
 
                 .props-list {
@@ -429,6 +616,10 @@ class DwcDevTools extends HTMLElement {
                     color: white;
                     background: var(--primary-color);
                 }
+
+                .history {
+
+                }
             </style>
         `;
     }
@@ -488,7 +679,7 @@ class DwcDevTools extends HTMLElement {
                             ${renderedComponentList} 
                         </ul>
                     </div>
-                    <div style="${!this._selectedComponentId ? 'display: none;' : ''}" class="methods-props-list">
+                    <div style="${!this._selectedComponentId ? 'display: none;' : ''}" class="details-pane methods-props-list ${this._selectedDetailsPane === DetailsPane.DISCOVERY ? 'selected' : ''}">
                         <section>props</section>
                         <ul class="props-list">
                             ${renderedPropsList}
@@ -497,6 +688,10 @@ class DwcDevTools extends HTMLElement {
                         <ul class="methods-list">
                             ${renderedMethodList}
                         </ul>
+                    </div>
+                    <div style="${!this._selectedComponentId ? 'display: none;' : ''}" class="details-pane history ${this._selectedDetailsPane === DetailsPane.HISTORY ? 'selected' : ''}">
+                    <section>history</section>
+                    ${this.getRenderedHistory()}
                     </div>
                 </div>
             </div>`,

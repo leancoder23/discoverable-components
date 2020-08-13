@@ -8,11 +8,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { html, render } from '../node_modules/lit-html/lit-html.js';
-import { DiscoverableWebComponent, Api } from './lib/@dwc/decorators.js';
+import { Discover } from './lib/@dwc/decorators.js';
 import './component-info.js';
 let TestCmp = class TestCmp extends HTMLElement {
     constructor() {
-        console.log('testt component constructor is called');
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this.testProp = '';
@@ -67,20 +66,20 @@ let TestCmp = class TestCmp extends HTMLElement {
 };
 TestCmp.is = "test-cmp";
 __decorate([
-    Api({
+    Discover.Field({
         description: 'Unique id of the rendered component'
     }),
     __metadata("design:type", String)
 ], TestCmp.prototype, "testProp", void 0);
 __decorate([
-    Api({
+    Discover.Field({
         description: 'Unique id of the rendered component'
     }),
     __metadata("design:type", String),
     __metadata("design:paramtypes", [])
 ], TestCmp.prototype, "uniqueId", null);
 __decorate([
-    Api({
+    Discover.Method({
         description: 'Update UI method'
     }),
     __metadata("design:type", Function),
@@ -88,7 +87,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], TestCmp.prototype, "updateUI", null);
 TestCmp = __decorate([
-    DiscoverableWebComponent({
+    Discover.Component({
         name: 'TestCMP',
         description: 'Another component'
     }),

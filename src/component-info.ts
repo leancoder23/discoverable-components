@@ -64,11 +64,7 @@ class ComponentInfo extends HTMLElement {
                this.subscribedPropChange[cmp.identifier]=true;
                
            }
-          console.log(cmp.identifier);
-        
-          console.log(cmp.instance.counter);
-
-
+       
             let props = getAvailableProperties(cmp.classMetadata.type).map((p:any)=>{
                 
                 return html`<div>

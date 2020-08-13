@@ -8,7 +8,6 @@ import{
 
 import './component-info.js';
 
-
 @Discover.Component({
     name:'TestCMP',
     description:'Another component'
@@ -24,7 +23,6 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
     }) 
      testProp:string;
     constructor(){
-        console.log('testt component constructor is called');
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this.testProp='';  

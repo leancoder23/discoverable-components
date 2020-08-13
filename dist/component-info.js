@@ -37,8 +37,6 @@ class ComponentInfo extends HTMLElement {
                 subscribePropertyChange(cmp.identifier, this.handlePropertyChangeEvent.bind(this));
                 this.subscribedPropChange[cmp.identifier] = true;
             }
-            console.log(cmp.identifier);
-            console.log(cmp.instance.counter);
             let props = getAvailableProperties(cmp.classMetadata.type).map((p) => {
                 return html `<div>
                 

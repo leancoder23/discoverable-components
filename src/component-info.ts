@@ -8,7 +8,7 @@ import {getAllAvailableComponentInfo,
     subscribePropertyChange,
     subscribeComponentTraceLog,
     unsubscribeComponentTraceLog,
-    setProperties
+    setProperty
     
  } from './lib/@dwc/component-manager.js';
 
@@ -53,7 +53,7 @@ class ComponentInfo extends HTMLElement {
     
     updateObjectValue(event:any,identifier:string,property:string){
        let v =  Number(event.target.value);
-       setProperties(identifier,property,v);
+       setProperty(identifier,property,v);
     }
 
     updateUI() {

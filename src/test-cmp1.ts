@@ -54,6 +54,12 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
     @Discover.Method({
         description:'Update UI method'
     })
+    performMagicStuff() {
+        console.log('magic stuff');
+
+        return 'magic response';
+    }
+
     updateUI() {
        render(html`
                 <style>

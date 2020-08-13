@@ -39,21 +39,37 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
         if(!connectedCallback||!disconnectedCallback){
             throw new Error('Component cannot be made discoverable, as required methods are not implemented');
         }
+
+        // makes dev tools react to component selection
+        function handleComponentClick () {
+            const identifier = this[uniqueIdSymbol];
+            const event = new CustomEvent("devtools:component-selection", { detail: { identifier: identifier }});
+            window.dispatchEvent(event);
+        }
         
         classOrDescriptor.prototype.connectedCallback = function(){
             //Add unique identifier for the discoverable component to keep track in component registory
             this[uniqueIdSymbol] = Math.random().toString(36).substr(2, 9);
+
+            this.setAttribute('dwc-id', this[uniqueIdSymbol]);
+
+            connectedCallback?.value.apply(this);
 
             ComponentManager.registerComponent({
                 identifier:this[uniqueIdSymbol],
                 instance:this,
                 classMetadata:{type:classOrDescriptor, ...dwcClassMetadata}
             });
-            connectedCallback?.value.apply(this);
+
+            // makes dev tools react to component selection
+            this.addEventListener('click', handleComponentClick);
         }
 
         classOrDescriptor.prototype.disconnectedCallback =function(){
             ComponentManager.deRegisterComponent(this[uniqueIdSymbol]);
+
+            this.removeEventListener('click', handleComponentClick);
+
             disconnectedCallback?.value.apply(this);
         }
     }

@@ -81,7 +81,8 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
                     name:'Method invoked',
                     identifer:this[uniqueIdSymbol],
                     method:key,
-                    args:args
+                    args:args,
+                    result:result
                 });
                 return result;
             }

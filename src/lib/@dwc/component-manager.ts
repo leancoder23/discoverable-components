@@ -189,7 +189,7 @@ export function getAvailableProperties(target:Function):any{
  * @param propertyKey property to be set
  * @param value property value
  */
-export function setProperties(identifer:string,propertyKey:string,value:any){
+export function setProperty(identifer:string,propertyKey:string,value:any){
 
     if(Reflect.has(_componentRegistory,identifer)){
         let cmpInfo = _componentRegistory[identifer];

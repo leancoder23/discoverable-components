@@ -2,8 +2,11 @@
 import {html, render, directive} from '../node_modules/lit-html/lit-html.js';
 import {
     getAllAvailableComponentInfo,
-    addComponentRegistoryUpdateEventListner,
-    removeComponentRegistoryUpdateEventListner,
+    subscribeComponentRegistoryUpdate,
+    unsubscribeComponentRegistoryUpdate,
+    subscribeComponentTraceLog,
+    invokeMethod,
+    setProperty,
     getAvailableMethods,
     getAvailableProperties
 } from './lib/@dwc/component-manager.js';
@@ -78,7 +81,7 @@ class DwcDevTools extends HTMLElement {
      * Standard Webcomponent lifecycle hook
      */
     connectedCallback () {
-        addComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
 
         window.addEventListener("devtools:component-selection", (event: Event) => {
             if (this._showDwcGuide) {
@@ -95,7 +98,9 @@ class DwcDevTools extends HTMLElement {
      * Standard Webcomponent lifecycle hook
      */
     disconnectedCallback () {
-        removeComponentRegistoryUpdateEventListner(this.handleComponentRegistoryUpdate);
+        unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
+
+        //subscribeComponentTraceLog();
 
         window.removeEventListener('resize', this.updateUI.bind(this));
     }
@@ -138,7 +143,7 @@ class DwcDevTools extends HTMLElement {
     executeFunction(comp: IDiscoveredComponent, methodName: string):void {
         console.log(`[dev tools] execute method "${methodName}" on component "${comp.name}"`);
 
-        const out = comp.instance[methodName]();
+        const result:any = invokeMethod(comp.id, methodName);
 
         this.logHistoryItem({
             date: new Date(),
@@ -147,7 +152,7 @@ class DwcDevTools extends HTMLElement {
             receiverComponentName: comp.name,
             subject: methodName + "()",
             type: HistoryItemType.METHOD_CALL,
-            output: out
+            output: ""
         });
     }
 

@@ -1,5 +1,6 @@
 import { html, render } from '../node_modules/lit-html/lit-html.js';
 import{ 
+    Discover,
     DiscoverableWebComponent, 
     IDiscoverableWebComponent,
     Api
@@ -8,7 +9,7 @@ import{
 import './component-info.js';
 
 
-@DiscoverableWebComponent({
+@Discover.Component({
     name:'TestCMP',
     description:'Another component'
 })
@@ -18,7 +19,7 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
     private root:ShadowRoot;
 
      _id:string;  
-     @Api({
+     @Discover.Field({
         description:'Unique id of the rendered component'
     }) 
      testProp:string;
@@ -31,7 +32,7 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
        
     }
    
-    @Api({
+    @Discover.Field({
         description:'Unique id of the rendered component'
     })
     get uniqueId():string{
@@ -52,7 +53,7 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
             this.updateUI();
     }
   
-    @Api({
+    @Discover.Method({
         description:'Update UI method'
     })
     updateUI() {

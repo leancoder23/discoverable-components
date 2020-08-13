@@ -64,6 +64,7 @@ interface IdwcApiMetadata{
     description:string
 }
 
+
 /**
  * Expose a method or property as API, so that other component can interact with the component using this methods or property
  * @param dwcMethodMetadata 
@@ -137,4 +138,14 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
         }
 
     }
+}
+
+
+/**
+ * Exposes various Discoverable methods
+ */
+export const Discover = {
+    Component:DiscoverableWebComponent,
+    Method:Api,
+    Field:Api
 }

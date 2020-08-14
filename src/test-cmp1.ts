@@ -55,8 +55,6 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
         description:'Update UI method'
     })
     performMagicStuff() {
-        console.log('magic stuff');
-
         return 'magic response';
     }
 

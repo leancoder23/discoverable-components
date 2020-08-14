@@ -1,5 +1,6 @@
 import * as  ComponentManager from './component-manager.js';
-
+import TraceLog, { TraceLogType } from './@types/trace-log.js';
+import { EventBus } from './event-bus.js';
 
 const uniqueIdSymbol = Symbol("uniqueId");
 
@@ -41,10 +42,8 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
         }
 
         // makes dev tools react to component selection
-        function handleComponentClick () {
-            const identifier = this[uniqueIdSymbol];
-            const event = new CustomEvent("devtools:component-selection", { detail: { identifier: identifier }});
-            window.dispatchEvent(event);
+        function handleComponentClick (identifier: string) {
+            EventBus.emit("devtools:component-selection", { identifier: identifier });
         }
         
         classOrDescriptor.prototype.connectedCallback = function(){
@@ -62,7 +61,7 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
             });
 
             // makes dev tools react to component selection
-            this.addEventListener('click', handleComponentClick);
+            this.addEventListener('click', () => handleComponentClick(this[uniqueIdSymbol]));
         }
 
         classOrDescriptor.prototype.disconnectedCallback =function(){
@@ -85,25 +84,30 @@ interface IdwcApiMetadata{
  * Expose a method or property as API, so that other component can interact with the component using this methods or property
  * @param dwcMethodMetadata 
  */
-export function Api(dwcApiMetadata?:IdwcApiMetadata){
+export function Api(dwcApiMetadata?:IdwcApiMetadata) {
     return function(target:any,key:string,descriptor?:PropertyDescriptor|undefined):void{
         //let descriptor: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target,key);
-        if(typeof(descriptor?.value) =="function"){
+        if (typeof(descriptor?.value) =="function") {
             let originalMethod = descriptor.value;
-            descriptor.value=function(this:any,...args:any[]){
+            descriptor.value=function(this:any,...args:any[]) {
                 let result= originalMethod.apply(this,args);
-                //now fire a method to log the calls
-                ComponentManager.fireComponentTraceLog({
-                    name:'Method invoked',
-                    identifer:this[uniqueIdSymbol],
-                    method:key,
-                    args:args,
-                    result:result
+
+                // now fire a method to log the calls
+                ComponentManager.fireComponentTraceLog ({
+                    date: new Date(),
+                    type: TraceLogType.METHOD_CALL,
+                    targetId: this[uniqueIdSymbol],
+                    payload: {
+                        methodName: key,
+                        args: args,
+                        result: result
+                    }
                 });
+
                 return result;
             }
             ComponentManager.registerMethod(target,key,dwcApiMetadata);
-        }else{
+        } else {
             //override property setter to get add reactivity behaviours
             if(!descriptor){ 
                 const propPrivateKey=Symbol(key);
@@ -114,11 +118,15 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
                     if(this[propPrivateKey]!=val){
                         this[propPrivateKey]= val;
                         
-                        ComponentManager.fireComponentTraceLog({
-                            name:'Property Change',
-                            identifer:this[uniqueIdSymbol],
-                            property:key,
-                            value:val
+                        // now fire a method to log the calls
+                        ComponentManager.fireComponentTraceLog ({
+                            date: new Date(),
+                            type: TraceLogType.PROPERTY_CHANGE,
+                            targetId: this[uniqueIdSymbol],
+                            payload: {
+                                property: key,
+                                value: val
+                            }
                         }); 
 
                         //Call the change event on the object
@@ -131,18 +139,22 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
                     get: getter,
                     set: setter
                 }); 
-            }else{
+            } else {
                 //property accessor
-                if(descriptor.set){
+                if (descriptor.set){
                     let originalSetter = descriptor.set;
                     descriptor.set=function(this:any,val){
                         originalSetter.call(this,val);
 
-                        ComponentManager.fireComponentTraceLog({
-                            name:'Property Change',
-                            identifer:this[uniqueIdSymbol],
-                            property:key,
-                            value:val
+                        // now fire a method to log the calls
+                        ComponentManager.fireComponentTraceLog ({
+                            date: new Date(),
+                            type: TraceLogType.PROPERTY_CHANGE,
+                            targetId: this[uniqueIdSymbol],
+                            payload: {
+                                property: key,
+                                value: val
+                            }
                         }); 
 
                         ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol]);

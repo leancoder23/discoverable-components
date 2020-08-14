@@ -20,8 +20,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     private root:ShadowRoot;
     private _counter:number;
     private _id:string;
-    constructor(){
-        console.log('my app constructor is called');
+    constructor () {
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this._counter=0;

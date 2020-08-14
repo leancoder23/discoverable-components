@@ -4,7 +4,8 @@ import {html, render} from '../node_modules/lit-html/lit-html.js';
 import{ 
     DiscoverableWebComponent, 
     IDiscoverableWebComponent,
-    Api
+    Api,
+    Renderer
 } from './lib/@dwc/decorators.js';
 
 @DiscoverableWebComponent({
@@ -84,6 +85,8 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         this.counter = 0 + Number(event.target.value);
         //this.setState({ counter: parseInt(event.target.value) });
     }
+
+    @Renderer
     updateUI() {
        render(html`
                 <style>

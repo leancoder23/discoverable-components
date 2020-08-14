@@ -1,12 +1,16 @@
 import * as  ComponentManager from './component-manager.js';
 
 
+/**
+ * hidden property for component unique id
+ */
 const uniqueIdSymbol = Symbol("uniqueId");
+/**
+ * hidden property for component subscription
+ */
+const subscriptionSymbol = Symbol("subscriptions");
 
-export type Constructor<T> = {
-    // tslint:disable-next-line:no-any
-    new (...args: any[]): T 
-};
+const renderMetadataKey = Symbol("renderer");
 
 /**
  * Interface to be implemented in order to ensure that DiscoverableComponent Decorator works correctly
@@ -29,48 +33,66 @@ interface IdwcClassMetadata{
 } 
 /**
  * Extend  a component and makes it discoverable to other component
- * @param dwcClassMetadata 
+ * @param dwcClassMetadata  
  */
 export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
-    return function (classOrDescriptor: Constructor<IDiscoverableWebComponent>) {
-        let connectedCallback: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype,'connectedCallback');
-        let disconnectedCallback:PropertyDescriptor | undefined = Reflect.getOwnPropertyDescriptor(classOrDescriptor.prototype,'disconnectedCallback');
+    return function <T extends { new(...args: any[]): {} }>(target: T) {
+        
+        let connectedCallback: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target.prototype,'connectedCallback');
+        let disconnectedCallback:PropertyDescriptor | undefined = Reflect.getOwnPropertyDescriptor(target.prototype,'disconnectedCallback');
 
         if(!connectedCallback||!disconnectedCallback){
             throw new Error('Component cannot be made discoverable, as required methods are not implemented');
         }
 
         // makes dev tools react to component selection
-        function handleComponentClick () {
+        function handleComponentClick (this:any) {
             const identifier = this[uniqueIdSymbol];
             const event = new CustomEvent("devtools:component-selection", { detail: { identifier: identifier }});
             window.dispatchEvent(event);
         }
         
-        classOrDescriptor.prototype.connectedCallback = function(){
+        target.prototype.connectedCallback = function(){
             //Add unique identifier for the discoverable component to keep track in component registory
             this[uniqueIdSymbol] = Math.random().toString(36).substr(2, 9);
 
             this.setAttribute('dwc-id', this[uniqueIdSymbol]);
-
+            console.log(this.constructor.name)
             connectedCallback?.value.apply(this);
-
             ComponentManager.registerComponent({
                 identifier:this[uniqueIdSymbol],
                 instance:this,
-                classMetadata:{type:classOrDescriptor, ...dwcClassMetadata}
+                classMetadata:{type:target, ...dwcClassMetadata}
             });
 
             // makes dev tools react to component selection
             this.addEventListener('click', handleComponentClick);
         }
 
-        classOrDescriptor.prototype.disconnectedCallback =function(){
+        target.prototype.disconnectedCallback =function(){
             ComponentManager.deRegisterComponent(this[uniqueIdSymbol]);
 
             this.removeEventListener('click', handleComponentClick);
 
             disconnectedCallback?.value.apply(this);
+        }
+
+        const validateRequiredSetup = ()=>{
+            let targetPrototype = target.prototype;
+            if(!Reflect.getMetadata(renderMetadataKey,targetPrototype)){
+                throw new Error(`No renderer is specified for [${targetPrototype.constructor.name}]`);
+            }
+            //TODO: check other requirements here if needed for discoverable component
+        }
+
+        //extend the class and override its constructor  check here all the valid methods and required for this component
+        return class extends target{
+            [subscriptionSymbol]:Array<any>;
+            constructor(...args:any[]){
+                super(args);
+                validateRequiredSetup();
+                this[subscriptionSymbol]=[];
+            }
         }
     }
 }
@@ -79,7 +101,6 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
 interface IdwcApiMetadata{
     description:string
 }
-
 
 /**
  * Expose a method or property as API, so that other component can interact with the component using this methods or property
@@ -155,6 +176,24 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
         }
 
     }
+}
+
+
+/**
+ * Indicate render function, this is used to drive the reactivity when component updates
+ *
+ * @export
+ * @param {*} target
+ * @param {string} key
+ * @param {PropertyDescriptor} descriptor
+ */
+export function Renderer(target:any,key:string,descriptor:PropertyDescriptor){
+    let rendererMetadata:Object =  Reflect.getMetadata(renderMetadataKey, target);
+    if(rendererMetadata){
+        throw new Error(`Duplicate Renderer ${target.constructor.name}`);
+    }
+    //Just log render method name
+    Reflect.defineMetadata(renderMetadataKey, key, target);
 }
 
 

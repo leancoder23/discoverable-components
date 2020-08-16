@@ -5,7 +5,8 @@ import{
     DiscoverableWebComponent, 
     IDiscoverableWebComponent,
     Api,
-    Renderer
+    Renderer,
+    Bind
 } from './lib/@dwc/decorators.js';
 
 @DiscoverableWebComponent({
@@ -21,13 +22,20 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     private root:ShadowRoot;
     private _counter:number;
     private _id:string;
+
+
+    @Bind({
+        sourceComponentName:"TestCMP",
+        sourceComponentPropertyName:"testProp"
+    })
+     testCmpTestProp:string;
     constructor(){
         console.log('my app constructor is called');
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this._counter=0;
         this._id=Math.random().toString(36).substr(2, 9);
-       
+       this.testCmpTestProp="";
     }
 
     @Api()
@@ -106,7 +114,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
                     }
                 </style>
                 <div class="container">
-
+                    TestCMP Reactive Property : ${this.testCmpTestProp}
                     <div class="action">
                         <input id="counterInput" .value="${String(this.counter)}" @change=${(event:any)=>this.onInputChange(event)}/>
                         <strong>Counter:</strong>${this.counter}

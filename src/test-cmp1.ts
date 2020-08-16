@@ -4,8 +4,10 @@ import{
     DiscoverableWebComponent, 
     IDiscoverableWebComponent,
     Renderer,
+    Bind,
     Api
 } from './lib/@dwc/decorators.js';
+
 
 import './component-info.js';
 
@@ -23,13 +25,21 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
         description:'Unique id of the rendered component'
     }) 
      testProp:string;
+
     constructor(){
         super();
         this.root = this.attachShadow({ mode: 'open' });
-        this.testProp='';  
+        this.testProp='initial test';  
         this._id=Math.random().toString(36).substr(2, 9);
        
+       
     }
+
+    @Bind({
+        sourceComponentName:"MyApp",
+        sourceComponentPropertyName:"counter"
+    })
+    myAppCounter:Number|undefined;
    
     @Discover.Field({
         description:'Unique id of the rendered component'
@@ -41,6 +51,9 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
     connectedCallback(){
         this.setAttribute('id',this.uniqueId);
         this.updateUI();
+
+       
+
     }
 
     disconnectedCallback() {
@@ -89,7 +102,9 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
                         <cmp-info></cmp-info>
                     </div>
                     <div class="action">
-                      <i> just a dummy component from other module</i>
+                      <i> just a dummy component from other module</i> <br/>
+                      <b>MyApp counter value (design time binding): ${this.myAppCounter}</b><br/>
+                     
                     </div>
                  
                     

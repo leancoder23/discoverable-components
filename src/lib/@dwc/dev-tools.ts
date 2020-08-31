@@ -24,6 +24,11 @@ import TraceLog, {
     PropertyTraceLogPayload
 } from './@types/trace-log.js';
 
+interface DevWindow extends Window {
+    This: any;
+    renderjson: any
+}
+
 interface IDiscoveredComponentProperty {
     name: string
     description: string
@@ -125,6 +130,8 @@ class DwcDevTools extends HTMLElement {
     selectComponent(id:string):void {
         this._selectedComponentId = id;
 
+        (window as DevWindow & typeof globalThis).This = this.getComponentById(this._selectedComponentId);
+
         this.updateUI();
     }
 
@@ -155,12 +162,16 @@ class DwcDevTools extends HTMLElement {
         });
     }
 
+    getComponentById(id: string):IDiscoveredComponent | undefined {
+        return this.getDiscoveredComponents().find((comp) => comp.id === id);
+    }
+
     getSelectedComponent():IDiscoveredComponent | undefined {
         if (!this._selectedComponentId) {
             return undefined;
         }
 
-        return this.getDiscoveredComponents().find((comp) => comp.id === this._selectedComponentId);
+        return this.getComponentById(this._selectedComponentId);
     }
 
     private getRenderedDwcGuide (label: string | undefined) {
@@ -348,6 +359,9 @@ class DwcDevTools extends HTMLElement {
     }
 
     private getRenderedTraceLogs () {
+        (window as DevWindow & typeof globalThis).renderjson.set_icons('▸', '▾');
+        (window as DevWindow & typeof globalThis).renderjson.set_show_to_level(1);
+
         const renderedHistoryItems = this._traceLogs.slice().reverse().filter(item => item.targetId === this._selectedComponentId).map((traceLog: TraceLog) => {
             const renderedTraceLog = function() {
                 const by = function() {
@@ -369,7 +383,7 @@ class DwcDevTools extends HTMLElement {
                         <div class="trace-log-item-subject method">
                             ${(traceLog.payload as MethodTraceLogPayload)?.methodName}
                         </div>
-                        <div class="trace-log-item-output">&rarr; ${(traceLog.payload as MethodTraceLogPayload)?.result || 'void'}</div>
+                        <div class="trace-log-item-output">${(window as DevWindow & typeof globalThis).renderjson((traceLog.payload as MethodTraceLogPayload)?.result) || 'void'}</div>
                     `;
                 }
 
@@ -395,7 +409,7 @@ class DwcDevTools extends HTMLElement {
             <style>
                 .trace-log-items {
                     --method-color: #F24730;
-                    --property-color: #0CEDAA;
+                    --property-color: #ED9B0C;
 
                     margin: 20px 10px;
                     padding: 0;
@@ -633,6 +647,10 @@ class DwcDevTools extends HTMLElement {
                     color: #AAA;
                 }
 
+                .props-list .object {
+                    font-size: 0.9em;
+                }
+
                 .methods-list .trigger-func-btn {
                     border: 1px solid var(--primary-color);
                     border-radius: 3px;
@@ -654,6 +672,37 @@ class DwcDevTools extends HTMLElement {
 
                 .history {
 
+                }
+
+                .renderjson {
+                    font-family: sans-serif;
+                    font-size: 0.95em;
+                    margin: 5px 0 0 0;
+                    color: #333;
+                    line-height: 1.4em;
+                    letter-spacing: 0.4px;
+                }
+
+                .renderjson .disclosure {
+                    text-decoration: none;
+                    color: #888;
+                    padding-right: 3px;
+                    cursor: default;
+                }
+
+                .renderjson a {
+                    color: #888;
+                    padding: 0 3px;
+                    text-decoration: none;
+                    cursor: default;
+                }
+
+                .renderjson .string {
+                    color: #BF4226;
+                }
+
+                .renderjson .number {
+                    color: #3832A6;
                 }
             </style>
         `;
@@ -680,11 +729,13 @@ class DwcDevTools extends HTMLElement {
 
         const foundComponent = componentList.find(comp => comp.id === this._selectedComponentId);
         const renderedPropsList = foundComponent?.props?.map((prop) => {
+            console.log(prop);
             return html`
                 <li>
-                    <label>${prop.name}:</label>
-                    <input type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement)?.value); (event.currentTarget as HTMLElement).blur(); }}}>
+                    <label>${prop.name}<span style="display: ${prop.type === Object || prop.type === Array ? 'none' : 'initial'}">:</span></label>
+                    <input style="display: ${prop.type === Object || prop.type === Array ? 'none' : 'initial'}" type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement)?.value); (event.currentTarget as HTMLElement).blur(); }}}>
                     <div class="description">${prop.description}</div>
+                    <div style="display: ${prop.type === Object || prop.type === Array ? 'initial' : 'none'}" class="object">${(window as DevWindow & typeof globalThis).renderjson(foundComponent.instance[prop.name])}</div>
                 </li>
             `;
         });

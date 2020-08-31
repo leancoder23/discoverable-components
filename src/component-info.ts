@@ -49,7 +49,7 @@ class ComponentInfo extends HTMLElement {
     } 
     
     updateObjectValue(event:any,identifier:string,property:string){
-       let v =  Number(event.target.value);
+       let v =  event.target.value;
        setProperty(identifier,property,v);
     }
 

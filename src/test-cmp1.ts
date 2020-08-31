@@ -55,7 +55,16 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
         description:'Update UI method'
     })
     performMagicStuff() {
-        return 'magic response';
+        return {
+            test: "fdsdf",
+            object: {
+                myProp: "fsf",
+                myProp2: "fsf",
+                myProp3: "fsf",
+                myProp4: "fsf"
+            },
+            array: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        };
     }
 
     updateUI() {

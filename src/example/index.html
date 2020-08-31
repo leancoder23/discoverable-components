@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <title>Todos</title>
+        <script type="text/javascript" src="../../node_modules/renderjson/renderjson.js"></script>
+    </head>
+    <body style="margin: 18px;">
+
+       <main></main>
+      
+       <dwc-dev-tools></dwc-dev-tools>
+
+       <script type="module">
+            import '../../dist/example/todo-data-broker.js';
+            import '../../dist/example/todo-list-ui.js';
+            import '../../dist/lib/@dwc/dev-tools.js';
+
+            const main = document.querySelector('main');
+
+            const button= document.createElement("button");
+
+            button.innerText="Add Todo List UI";
+            button.addEventListener("click",()=>{
+                main.appendChild(document.createElement('todo-list-ui'));
+            });
+
+            main.appendChild(button);
+
+
+            main.appendChild(document.createElement('todo-data-broker'));
+       </script>
+    </body>
+</html>

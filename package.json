@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "live-server": "^1.2.1",
+    "renderjson": "^1.4.0",
     "typescript": "^3.9.7"
   }
 }

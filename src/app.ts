@@ -55,7 +55,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     }
 
     disconnectedCallback() {
-    //Perform cleanup here
+        //Perform cleanup here
     } 
 
     attributeChangedCallback(name:string, oldValue:any, newValue:any){

@@ -1,5 +1,4 @@
-
-import {html, render, directive} from '../node_modules/lit-html/lit-html.js';
+import { html, render, directive } from "../node_modules/lit-html/lit-html.js";
 import {
     getAllAvailableComponentInfo,
     subscribeComponentRegistoryUpdate,
@@ -8,113 +7,153 @@ import {
     invokeMethod,
     setProperty,
     getAvailableMethods,
-    getAvailableProperties
-} from './lib/@dwc/component-manager.js';
-
+    getAvailableProperties,
+} from "./lib/@dwc/component-manager.js";
 
 interface IDiscoveredComponentProperty {
-    name: string
-    description: string
-    type: Function
+    name: string;
+    description: string;
+    type: Function;
 }
 
 interface IDiscoveredComponentMethod {
-    name: string
-    description: string
+    name: string;
+    description: string;
 }
 
 interface IDiscoveredComponent {
-    id: string
-    name: string
-    description: string
-    props: Array<IDiscoveredComponentProperty>
-    methods: Array<IDiscoveredComponentMethod>
-    instance: any
+    id: string;
+    name: string;
+    description: string;
+    props: Array<IDiscoveredComponentProperty>;
+    methods: Array<IDiscoveredComponentMethod>;
+    instance: any;
 }
 
 enum DetailsPane {
-    DISCOVERY = 'DISCOVERY',
-    HISTORY = 'HISTORY'
+    DISCOVERY = "DISCOVERY",
+    HISTORY = "HISTORY",
 }
 
 enum HistoryItemType {
-    METHOD_CALL = 'METHOD',
-    PROPERTY_CHANGE = 'PROPERTY_CHANGE'
+    METHOD_CALL = "METHOD",
+    PROPERTY_CHANGE = "PROPERTY_CHANGE",
 }
 
 interface HistoryItem {
-    date: Date,
-    senderComponentName: string,
-    senderComponentId?: string,
-    receiverComponentName: string,
-    receiverComponentId?: string,
-    type: HistoryItemType,
-    subject: string,
-    input?: string,
-    output?: string
+    date: Date;
+    senderComponentName: string;
+    senderComponentId?: string;
+    receiverComponentName: string;
+    receiverComponentId?: string;
+    type: HistoryItemType;
+    subject: string;
+    input?: string;
+    output?: string;
 }
 
 class DwcDevTools extends HTMLElement {
     static is = "dwc-dev-tools";
-    private root:ShadowRoot;
+    private root: ShadowRoot;
 
-    private _visible:boolean = true;
+    private _container: any;
+    private _visible: boolean = true;
     private _showDwcGuide = false;
     private _selectedDetailsPane = DetailsPane.DISCOVERY;
-    private _selectedComponentId:string | undefined = undefined;
-    private _historyItems:HistoryItem[] = [{
-        date: new Date(),
-        senderComponentName: "DevTools",
-        receiverComponentId: "fsdfsd",
-        receiverComponentName: "myComponentName",
-        subject: "performMagicStuff()",
-        type: HistoryItemType.METHOD_CALL,
-        output: "Test output"
-    }];
- 
-    constructor(){
+    private _selectedComponentId: string | undefined = undefined;
+    private _historyItems: HistoryItem[] = [
+        {
+            date: new Date(),
+            senderComponentName: "DevTools",
+            receiverComponentId: "fsdfsd",
+            receiverComponentName: "myComponentName",
+            subject: "performMagicStuff()",
+            type: HistoryItemType.METHOD_CALL,
+            output: "Test output",
+        },
+    ];
+
+    constructor() {
         super();
-        this.root = this.attachShadow({ mode: 'open' });    
+        this.root = this.attachShadow({ mode: "open" });
     }
 
     /**
      * Standard Webcomponent lifecycle hook
      */
-    connectedCallback () {
-        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
+    connectedCallback() {
+        subscribeComponentRegistoryUpdate(
+            this.handleComponentRegistoryUpdate.bind(this)
+        );
 
-        window.addEventListener("devtools:component-selection", (event: Event) => {
-            if (this._showDwcGuide) {
-                this.selectComponent((event as CustomEvent).detail?.identifier);
+        window.addEventListener(
+            "devtools:component-selection",
+            (event: Event) => {
+                if (this._showDwcGuide) {
+                    this.selectComponent(
+                        (event as CustomEvent).detail?.identifier
+                    );
+                }
             }
-        });
+        );
 
-        window.addEventListener('resize', this.updateUI.bind(this));
+        window.addEventListener("resize", this.updateUI.bind(this));
 
         this.updateUI();
-    }   
+
+        this._container = this.root.querySelector(".dev-tools-outer");
+        this._container.addEventListener(
+            "mousedown",
+            this.handleMouseDown.bind(this)
+        );
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
+    }
 
     /**
      * Standard Webcomponent lifecycle hook
      */
-    disconnectedCallback () {
-        unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
+    disconnectedCallback() {
+        unsubscribeComponentRegistoryUpdate(
+            this.handleComponentRegistoryUpdate
+        );
 
         //subscribeComponentTraceLog();
 
-        window.removeEventListener('resize', this.updateUI.bind(this));
+        window.removeEventListener("resize", this.updateUI.bind(this));
     }
 
-    handleComponentRegistoryUpdate():void {
+    /* Drag and drop methods starts */
+    handleMouseDown() {
+        this._container.style.cursor = "move";
+        this._container.addEventListener("mouseup", this.handleMouseUp);
+        document.body.addEventListener("mousemove", this.handleMouseMove);
+        document.body.addEventListener("mouseleave", this.handleMouseUp);
+    }
+
+    handleMouseUp() {
+        this._container.style.cursor = "default";
+        document.body.removeEventListener("mousemove", this.handleMouseMove);
+        document.body.removeEventListener("mouseleave", this.handleMouseUp);
+    }
+
+    handleMouseMove(event: any) {
+        this._container.style.top = `${event.clientY}px`;
+        this._container.style.left = `${event.clientX}px`;
+    }
+    /* Drag and drop methods */
+
+    handleComponentRegistoryUpdate(): void {
         this.updateUI();
     }
 
-    toggleTools():void {
+    toggleTools(): void {
         this._visible = !this._visible;
         this.updateUI();
     }
 
-    toggleDwcGuide():void {
+    toggleDwcGuide(): void {
         this._showDwcGuide = !this._showDwcGuide;
 
         this.updateUI();
@@ -130,20 +169,28 @@ class DwcDevTools extends HTMLElement {
         this.updateUI();
     }
 
-    selectComponent(id:string):void {
+    selectComponent(id: string): void {
         this._selectedComponentId = id;
 
         this.updateUI();
     }
 
-    updatePropertyValue(comp: IDiscoveredComponent, propertyName: string, value: string):void {
-        console.log(`[dev tools] update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
+    updatePropertyValue(
+        comp: IDiscoveredComponent,
+        propertyName: string,
+        value: string
+    ): void {
+        console.log(
+            `[dev tools] update property "${propertyName}" to new value "${value}" on component "${comp.name}"`
+        );
     }
 
-    executeFunction(comp: IDiscoveredComponent, methodName: string):void {
-        console.log(`[dev tools] execute method "${methodName}" on component "${comp.name}"`);
+    executeFunction(comp: IDiscoveredComponent, methodName: string): void {
+        console.log(
+            `[dev tools] execute method "${methodName}" on component "${comp.name}"`
+        );
 
-        const result:any = invokeMethod(comp.id, methodName);
+        const result: any = invokeMethod(comp.id, methodName);
 
         this.logHistoryItem({
             date: new Date(),
@@ -152,7 +199,7 @@ class DwcDevTools extends HTMLElement {
             receiverComponentName: comp.name,
             subject: methodName + "()",
             type: HistoryItemType.METHOD_CALL,
-            output: ""
+            output: "",
         });
     }
 
@@ -162,74 +209,102 @@ class DwcDevTools extends HTMLElement {
         this.updateUI();
     }
 
-    private getDiscoveredComponents():Array<IDiscoveredComponent> {
+    private getDiscoveredComponents(): Array<IDiscoveredComponent> {
         let availableComponents = getAllAvailableComponentInfo();
-        
-        return availableComponents.map((component:any) => {
+
+        return availableComponents.map((component: any) => {
             return {
                 id: component.identifier,
                 name: component.classMetadata.name,
                 description: component.classMetadata.description,
                 props: getAvailableProperties(component.classMetadata.type),
                 methods: getAvailableMethods(component.classMetadata.type),
-                instance: component.instance
-            }
+                instance: component.instance,
+            };
         });
     }
 
-    getSelectedComponent():IDiscoveredComponent | undefined {
+    getSelectedComponent(): IDiscoveredComponent | undefined {
         if (!this._selectedComponentId) {
             return undefined;
         }
 
-        return this.getDiscoveredComponents().find((comp) => comp.id === this._selectedComponentId);
+        return this.getDiscoveredComponents().find(
+            (comp) => comp.id === this._selectedComponentId
+        );
     }
 
-    private getRenderedDwcGuide (label: string | undefined) {
+    private getRenderedDwcGuide(label: string | undefined) {
         const DISTANCE = 10; // how many px should the guide be larger than the covered element?
-        const dwcGuideBoundedClientRect = document.querySelectorAll(`[dwc-id="${this._selectedComponentId}"]`)[0]?.getBoundingClientRect();
+        const dwcGuideBoundedClientRect = document
+            .querySelectorAll(`[dwc-id="${this._selectedComponentId}"]`)[0]
+            ?.getBoundingClientRect();
 
-        if (!dwcGuideBoundedClientRect) {
+        if (!dwcGuideBoundedClientRect) {
             return null;
         }
 
-        const distanceTop = function () {
+        const distanceTop = (function () {
             if (dwcGuideBoundedClientRect.top - DISTANCE >= 0) {
                 return DISTANCE;
             } else {
-                return DISTANCE - (dwcGuideBoundedClientRect.top - DISTANCE) * (-1);
+                return (
+                    DISTANCE - (dwcGuideBoundedClientRect.top - DISTANCE) * -1
+                );
             }
-        }();
+        })();
 
-        const distanceBottom = function () {
-            if (dwcGuideBoundedClientRect.height + DISTANCE <= dwcGuideBoundedClientRect.bottom) {
+        const distanceBottom = (function () {
+            if (
+                dwcGuideBoundedClientRect.height + DISTANCE <=
+                dwcGuideBoundedClientRect.bottom
+            ) {
                 return DISTANCE;
             } else {
-                return DISTANCE - (dwcGuideBoundedClientRect.bottom - dwcGuideBoundedClientRect.height - DISTANCE) * (-1);
+                return (
+                    DISTANCE -
+                    (dwcGuideBoundedClientRect.bottom -
+                        dwcGuideBoundedClientRect.height -
+                        DISTANCE) *
+                        -1
+                );
             }
-        }();
+        })();
 
-        const distanceLeft = function () {
+        const distanceLeft = (function () {
             if (dwcGuideBoundedClientRect.left - DISTANCE >= 0) {
                 return DISTANCE;
             } else {
-                return DISTANCE - (dwcGuideBoundedClientRect.left - DISTANCE) * (-1);
+                return (
+                    DISTANCE - (dwcGuideBoundedClientRect.left - DISTANCE) * -1
+                );
             }
-        }();
+        })();
 
-        const distanceRight = function () {
-            if (dwcGuideBoundedClientRect.width + DISTANCE <= dwcGuideBoundedClientRect.right) {
+        const distanceRight = (function () {
+            if (
+                dwcGuideBoundedClientRect.width + DISTANCE <=
+                dwcGuideBoundedClientRect.right
+            ) {
                 return DISTANCE;
             } else {
-                return DISTANCE - (dwcGuideBoundedClientRect.right - dwcGuideBoundedClientRect.width - DISTANCE) * (-1) ;
+                return (
+                    DISTANCE -
+                    (dwcGuideBoundedClientRect.right -
+                        dwcGuideBoundedClientRect.width -
+                        DISTANCE) *
+                        -1
+                );
             }
-        }();
-        
+        })();
+
         const top = dwcGuideBoundedClientRect.top - distanceTop;
-        const height = dwcGuideBoundedClientRect.height + distanceTop + distanceBottom;
+        const height =
+            dwcGuideBoundedClientRect.height + distanceTop + distanceBottom;
         const left = dwcGuideBoundedClientRect.left - distanceLeft;
-        const width = dwcGuideBoundedClientRect.width + distanceLeft + distanceRight;
-        
+        const width =
+            dwcGuideBoundedClientRect.width + distanceLeft + distanceRight;
+
         //console.log(`distanceLeft: ${distanceLeft}, distanceRight: ${distanceRight}, distanceTop: ${distanceLeft}, distanceBottom: ${distanceRight}, top: ${top}, left: ${left}, width: ${width}, height: ${height}`);
 
         if (this._showDwcGuide) {
@@ -238,12 +313,12 @@ class DwcDevTools extends HTMLElement {
                     .dwc-guide {
                         box-sizing: border-box;
                         pointer-events: none;
-                        border: 2px solid #F21879;
+                        border: 2px solid #f21879;
                         border-radius: 8px;
                         position: absolute;
-                        top: 0; 
-                        left: 0; 
-                        right: auto; 
+                        top: 0;
+                        left: 0;
+                        right: auto;
                         bottom: auto;
                     }
 
@@ -254,13 +329,16 @@ class DwcDevTools extends HTMLElement {
                         font-family: sans-serif;
                         font-size: 13px;
                         padding: 2px 5px;
-                        background: #F21879;
+                        background: #f21879;
                         border-radius: 4px;
                         color: white;
                         letter-spacing: 0.5px;
                     }
                 </style>
-                <div class="dwc-guide" style="width: ${width}px; height: ${height}px; transform: translate(${left}px, ${top}px);">
+                <div
+                    class="dwc-guide"
+                    style="width: ${width}px; height: ${height}px; transform: translate(${left}px, ${top}px);"
+                >
                     <div class="dwc-guide-label">${label}</div>
                 </div>
             `;
@@ -269,7 +347,7 @@ class DwcDevTools extends HTMLElement {
         return html``;
     }
 
-    private getRenderedToolbar () {
+    private getRenderedToolbar() {
         return html`
             <style>
                 .dev-tools-toolbar {
@@ -280,7 +358,8 @@ class DwcDevTools extends HTMLElement {
                     height: 35px;
                 }
 
-                .dev-tools-toolbar > .toolbar-left, .dev-tools-toolbar > .toolbar-right {
+                .dev-tools-toolbar > .toolbar-left,
+                .dev-tools-toolbar > .toolbar-right {
                     box-sizing: border-box;
                     flex: 1;
                     display: flex;
@@ -359,31 +438,84 @@ class DwcDevTools extends HTMLElement {
 
             <div class="dev-tools-toolbar">
                 <div class="toolbar-left">
-                    <a class="toolbar-btn dwc-guide-btn" href="#" @click=${()=>this.toggleDwcGuide()}><div class="${this._showDwcGuide ? 'close-icon' : 'open-icon'}"></div></a>
+                    <a
+                        class="toolbar-btn dwc-guide-btn"
+                        href="#"
+                        @click=${() => this.toggleDwcGuide()}
+                        ><div
+                            class="${this._showDwcGuide
+                                ? "close-icon"
+                                : "open-icon"}"
+                        ></div
+                    ></a>
                 </div>
                 <div class="toolbar-right">
-                    <a class="toolbar-btn discovery-pane-btn" href="#" @click=${()=>this.selectDetailsPane(DetailsPane.DISCOVERY)}><div class="${this._selectedDetailsPane === DetailsPane.DISCOVERY ? 'active-icon' : 'inactive-icon'}"></div></a>
-                    <a class="toolbar-btn history-pane-btn" href="#" @click=${()=>this.selectDetailsPane(DetailsPane.HISTORY)}><div class="${this._selectedDetailsPane === DetailsPane.HISTORY ? 'active-icon' : 'inactive-icon'}"></div></a>
+                    <a
+                        class="toolbar-btn discovery-pane-btn"
+                        href="#"
+                        @click=${() =>
+                            this.selectDetailsPane(DetailsPane.DISCOVERY)}
+                        ><div
+                            class="${this._selectedDetailsPane ===
+                            DetailsPane.DISCOVERY
+                                ? "active-icon"
+                                : "inactive-icon"}"
+                        ></div
+                    ></a>
+                    <a
+                        class="toolbar-btn history-pane-btn"
+                        href="#"
+                        @click=${() =>
+                            this.selectDetailsPane(DetailsPane.HISTORY)}
+                        ><div
+                            class="${this._selectedDetailsPane ===
+                            DetailsPane.HISTORY
+                                ? "active-icon"
+                                : "inactive-icon"}"
+                        ></div
+                    ></a>
                 </div>
             </div>
         `;
     }
 
-    private getRenderedHistory () {
-        const renderedHistoryItems = this._historyItems.slice().reverse().filter(item => item.receiverComponentId === this._selectedComponentId).map((historyItem: HistoryItem) => {
-            return html`
-                <li class="history-item">
-                    <div class="history-item-date">${new Intl.DateTimeFormat('default', {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'}).format(historyItem.date)} by <a href="#">${historyItem.senderComponentName}</a></div>
-                    <div class="history-item-badge">M</div><div class="history-item-subject">${historyItem.subject}</div>
-                    <div class="history-item-output">&rarr; ${historyItem.output}</div>
-                </li>
-            `;
-        });
+    private getRenderedHistory() {
+        const renderedHistoryItems = this._historyItems
+            .slice()
+            .reverse()
+            .filter(
+                (item) => item.receiverComponentId === this._selectedComponentId
+            )
+            .map((historyItem: HistoryItem) => {
+                return html`
+                    <li class="history-item">
+                        <div class="history-item-date">
+                            ${new Intl.DateTimeFormat("default", {
+                                year: "numeric",
+                                month: "numeric",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "numeric",
+                                second: "numeric",
+                            }).format(historyItem.date)}
+                            by
+                            <a href="#">${historyItem.senderComponentName}</a>
+                        </div>
+                        <div class="history-item-badge">M</div>
+                        <div class="history-item-subject">
+                            ${historyItem.subject}
+                        </div>
+                        <div class="history-item-output">
+                            &rarr; ${historyItem.output}
+                        </div>
+                    </li>
+                `;
+            });
 
         return html`
             <style>
                 .history-items {
-                    --history-color: #F24730;
+                    --history-color: #f24730;
 
                     margin: 20px 10px;
                     padding: 0;
@@ -397,7 +529,7 @@ class DwcDevTools extends HTMLElement {
                 .history-item-date {
                     font-size: 0.8em;
                     font-family: sans-serif;
-                    color: #AAA;
+                    color: #aaa;
                     letter-spacing: 0.3px;
                 }
 
@@ -428,15 +560,15 @@ class DwcDevTools extends HTMLElement {
         `;
     }
 
-    private getStyles () {
+    private getStyles() {
         return html`
             <style>
                 .dev-tools-outer {
-                    --primary-color: #4E38F2;
+                    --primary-color: #4e38f2;
                     --dev-tools-height: 300px;
 
                     box-sizing: border-box;
-                    background: #FFF;
+                    background: #fff;
                     position: fixed;
                     bottom: 0;
                     margin-bottom: 0;
@@ -445,9 +577,9 @@ class DwcDevTools extends HTMLElement {
                     height: var(--dev-tools-height);
                     z-index: 1000;
                     font-family: sans-serif;
-                    -webkit-box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
-                    -moz-box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
-                    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
+                    -webkit-box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+                    -moz-box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
 
                     transition: all 0.15s;
                 }
@@ -469,15 +601,15 @@ class DwcDevTools extends HTMLElement {
                     justify-content: center;
                     box-sizing: border-box;
                     position: absolute;
-                    background: #FFF;
+                    background: #fff;
                     border-radius: 100%;
                     height: 50px;
                     width: 50px;
                     right: 10px;
                     top: -7px;
-                    -webkit-box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
-                    -moz-box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
-                    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
+                    -webkit-box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+                    -moz-box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
                 }
 
                 .dev-tools-floating-btn > .close-icon {
@@ -523,7 +655,7 @@ class DwcDevTools extends HTMLElement {
 
                 .component-list > ul > li:hover {
                     cursor: pointer;
-                    background: #fAfAfA;
+                    background: #fafafa;
                 }
 
                 .component-list > ul > li.selected {
@@ -531,7 +663,7 @@ class DwcDevTools extends HTMLElement {
                 }
 
                 .component-list .description {
-                    color: #AAA;
+                    color: #aaa;
                 }
 
                 .details-pane {
@@ -560,14 +692,15 @@ class DwcDevTools extends HTMLElement {
                 }
 
                 .props-list {
-                    
                 }
 
-                .props-list, .methods-list {
+                .props-list,
+                .methods-list {
                     padding-left: 10px;
                 }
 
-                .props-list > li, .methods-list > li {
+                .props-list > li,
+                .methods-list > li {
                     list-style: none;
                     padding: 0 0 5px 0;
                 }
@@ -582,7 +715,8 @@ class DwcDevTools extends HTMLElement {
                     background: transparent;
                 }
 
-                .props-list > li > label, .methods-list > li > .name {
+                .props-list > li > label,
+                .methods-list > li > .name {
                     font-family: monospace;
                     font-size: 1.2em;
                     color: var(--primary-color);
@@ -597,10 +731,11 @@ class DwcDevTools extends HTMLElement {
                     border-color: #ddd;
                 }
 
-                .props-list > li > .description, .methods-list > li > .description {
+                .props-list > li > .description,
+                .methods-list > li > .description {
                     font-size: 0.8em;
                     font-family: sans-serif;
-                    color: #AAA;
+                    color: #aaa;
                 }
 
                 .methods-list .trigger-func-btn {
@@ -623,37 +758,59 @@ class DwcDevTools extends HTMLElement {
                 }
 
                 .history {
-
                 }
             </style>
         `;
     }
 
     updateUI() {
-        console.log('[dev tools] update UI');
+        console.log("[dev tools] update UI");
 
-        const componentList:Array<IDiscoveredComponent> = this.getDiscoveredComponents();
+        const componentList: Array<IDiscoveredComponent> = this.getDiscoveredComponents();
 
         // select first component if available
         if (!this.getSelectedComponent() && componentList.length > 0) {
             this.selectComponent(componentList[0].id);
         }
 
-        const renderedComponentList = componentList.map((comp)=>{
-            return html `
-                <li class="comp-list-item ${this._selectedComponentId === comp.id ? 'selected' : ''}" @click=${()=>this.selectComponent(comp.id)}>
+        const renderedComponentList = componentList.map((comp) => {
+            return html`
+                <li
+                    class="comp-list-item ${this._selectedComponentId ===
+                    comp.id
+                        ? "selected"
+                        : ""}"
+                    @click=${() => this.selectComponent(comp.id)}
+                >
                     <div class="name">${comp.name}</div>
-                    <div class="description"><small>${comp.description}</small></div>
+                    <div class="description">
+                        <small>${comp.description}</small>
+                    </div>
                 </li>
             `;
         });
 
-        const foundComponent = componentList.find(comp => comp.id === this._selectedComponentId);
+        const foundComponent = componentList.find(
+            (comp) => comp.id === this._selectedComponentId
+        );
         const renderedPropsList = foundComponent?.props?.map((prop) => {
             return html`
                 <li>
                     <label>${prop.name}:</label>
-                    <input type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement).value); (event.currentTarget as HTMLElement).blur(); }}}>
+                    <input
+                        type="text"
+                        .value=${foundComponent.instance[prop.name] || ""}
+                        @keydown=${(event: KeyboardEvent) => {
+                            if (event.keyCode === 13) {
+                                this.updatePropertyValue(
+                                    foundComponent,
+                                    prop.name,
+                                    (event.target as HTMLInputElement).value
+                                );
+                                (event.currentTarget as HTMLElement).blur();
+                            }
+                        }}
+                    />
                     <div class="description">${prop.description}</div>
                 </li>
             `;
@@ -662,48 +819,82 @@ class DwcDevTools extends HTMLElement {
         let renderedMethodList = foundComponent?.methods?.map((method) => {
             return html`
                 <li>
-                    <span class="name">${method.name}()</span><button class="trigger-func-btn" @click=${() => this.executeFunction(foundComponent, method.name)}>call</button>
+                    <span class="name">${method.name}()</span
+                    ><button
+                        class="trigger-func-btn"
+                        @click=${() =>
+                            this.executeFunction(foundComponent, method.name)}
+                    >
+                        call
+                    </button>
                     <div class="description">${method.description}</div>
                 </li>
             `;
         });
 
-        render(html`
-            ${this.getStyles()}
+        render(
+            html` ${this.getStyles()}
+                ${this.getRenderedDwcGuide(this.getSelectedComponent()?.name)}
 
-            ${this.getRenderedDwcGuide(this.getSelectedComponent()?.name)}
+                <div
+                    class="${this._visible
+                        ? "dev-tools-outer"
+                        : "dev-tools-outer closed"}"
+                >
+                    <a
+                        class="dev-tools-floating-btn"
+                        href="#"
+                        @click=${() => this.toggleTools()}
+                        ><div
+                            class="${this._visible
+                                ? "close-icon"
+                                : "open-icon"}"
+                        ></div
+                    ></a>
 
-            <div class="${this._visible ? 'dev-tools-outer' : 'dev-tools-outer closed'}">
-                <a class="dev-tools-floating-btn" href="#" @click=${()=>this.toggleTools()}><div class="${this._visible ? 'close-icon' : 'open-icon'}"></div></a>
-                
-                ${this.getRenderedToolbar()}
+                    ${this.getRenderedToolbar()}
 
-                <div class="dev-tools-inner">
-                    <div class="component-list">
-                        <ul>
-                            ${renderedComponentList} 
-                        </ul>
+                    <div class="dev-tools-inner">
+                        <div class="component-list">
+                            <ul>
+                                ${renderedComponentList}
+                            </ul>
+                        </div>
+                        <div
+                            style="${!this._selectedComponentId
+                                ? "display: none;"
+                                : ""}"
+                            class="details-pane methods-props-list ${this
+                                ._selectedDetailsPane === DetailsPane.DISCOVERY
+                                ? "selected"
+                                : ""}"
+                        >
+                            <section>props</section>
+                            <ul class="props-list">
+                                ${renderedPropsList}
+                            </ul>
+                            <section>methods</section>
+                            <ul class="methods-list">
+                                ${renderedMethodList}
+                            </ul>
+                        </div>
+                        <div
+                            style="${!this._selectedComponentId
+                                ? "display: none;"
+                                : ""}"
+                            class="details-pane history ${this
+                                ._selectedDetailsPane === DetailsPane.HISTORY
+                                ? "selected"
+                                : ""}"
+                        >
+                            <section>history</section>
+                            ${this.getRenderedHistory()}
+                        </div>
                     </div>
-                    <div style="${!this._selectedComponentId ? 'display: none;' : ''}" class="details-pane methods-props-list ${this._selectedDetailsPane === DetailsPane.DISCOVERY ? 'selected' : ''}">
-                        <section>props</section>
-                        <ul class="props-list">
-                            ${renderedPropsList}
-                        </ul>
-                        <section>methods</section>
-                        <ul class="methods-list">
-                            ${renderedMethodList}
-                        </ul>
-                    </div>
-                    <div style="${!this._selectedComponentId ? 'display: none;' : ''}" class="details-pane history ${this._selectedDetailsPane === DetailsPane.HISTORY ? 'selected' : ''}">
-                    <section>history</section>
-                    ${this.getRenderedHistory()}
-                    </div>
-                </div>
-            </div>`,
-            this.root);
+                </div>`,
+            this.root
+        );
     }
-
 }
-
 
 customElements.define(DwcDevTools.is, DwcDevTools);

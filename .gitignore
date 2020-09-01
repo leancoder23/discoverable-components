@@ -1,2 +1,6 @@
 node_modules/
 dist/
+ts-dist/
+lib-esm/
+build/
+.DS_Store

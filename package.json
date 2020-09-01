@@ -1,22 +1,29 @@
 {
-  "name": "dwc-exp",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "tsc": "tsc --watch",
-    "dev": "live-server --port 8080 --no-browser --mount=/:./",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "baconjs": "^3.0.13",
-    "lit-html": "^1.2.1",
-    "reflect-metadata": "^0.1.13"
-  },
-  "devDependencies": {
-    "live-server": "^1.2.1",
-    "typescript": "^3.9.7"
-  }
+    "name": "dwc-exp",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "tsc": "tsc",
+        "tscw": "tsc --watch",
+        "dev": "live-server --port 8080 --no-browser --mount=/:./",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "tsc && webpack",
+        "start": "tsc && webpack && live-server --port 8080 --no-browser --mount=/:./"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "baconjs": "^3.0.13",
+        "lit-html": "^1.2.1",
+        "reflect-metadata": "^0.1.13"
+    },
+    "devDependencies": {
+        "copy-webpack-plugin": "^6.1.0",
+        "live-server": "^1.2.1",
+        "ts-loader": "^8.0.3",
+        "typescript": "^3.9.7",
+        "webpack": "^4.44.1",
+        "webpack-cli": "^3.3.12"
+    }
 }

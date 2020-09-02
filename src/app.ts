@@ -6,7 +6,8 @@ import{
     IDiscoverableWebComponent,
     Api,
     Renderer,
-    Bind
+    Bind,
+    Discover
 } from './lib/@dwc/decorators.js';
 
 @DiscoverableWebComponent({
@@ -24,6 +25,9 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     private _id:string;
 
 
+
+
+
     @Bind({
         sourceComponentName:"TestCMP",
         sourceComponentPropertyName:"testProp"
@@ -36,7 +40,14 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         this._counter=0;
         this._id=Math.random().toString(36).substr(2, 9);
        this.testCmpTestProp="";
+       this.todoList=[];
     }
+
+
+    @Discover.Field({
+        description:'test array to bind'
+    })
+    todoList:any[];
 
     @Api()
     get uniqueId():string{
@@ -94,6 +105,10 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         //this.setState({ counter: parseInt(event.target.value) });
     }
 
+    addTodo(){
+        this.todoList = [...this.todoList,{name:'todo item'}];
+    }
+
     @Renderer
     updateUI() {
        render(html`
@@ -119,6 +134,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
                         <input id="counterInput" .value="${String(this.counter)}" @change=${(event:any)=>this.onInputChange(event)}/>
                         <strong>Counter:</strong>${this.counter}
                         <button @click=${(event:any)=>this.onClick(event)}>Counter</button>
+                        <button @click=${(event:any)=>this.addTodo()}>Add todo</button>
                         <button @click=${(event:any)=>this.onClose(event)}>close</button>
                     </div>
                 </div>`,this.root);

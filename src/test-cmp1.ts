@@ -47,6 +47,12 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
     get uniqueId():string{
         return this._id;
     }
+
+    @Bind({
+        sourceComponentName:"MyApp",
+        sourceComponentPropertyName:"todoList"
+    })
+    _todoList:any[]|undefined;
    
     connectedCallback(){
         this.setAttribute('id',this.uniqueId);
@@ -77,6 +83,7 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
 
     @Renderer
     updateUI() {
+        console.log('myapp todo list', this._todoList);
        render(html`
                 <style>
                     .container{
@@ -104,6 +111,8 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
                     <div class="action">
                       <i> just a dummy component from other module</i> <br/>
                       <b>MyApp counter value (design time binding): ${this.myAppCounter}</b><br/>
+
+                      <b>MyApp no of todoList Item (design time binding): ${this._todoList?.length}</b><br/>
                      
                     </div>
                  

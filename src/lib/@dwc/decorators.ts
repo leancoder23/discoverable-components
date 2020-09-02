@@ -154,9 +154,8 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
                     if(typeof propertyValue !='object'){
                         context[binderInfo.targetPropertyName] = propertyValue;
                     }else{
-                        context[binderInfo.targetPropertyName] = {...propertyValue}; // assign copy of it
+                        context[binderInfo.targetPropertyName] = Array.isArray(propertyValue)?[...propertyValue]:{...propertyValue}; //assign copy of it                       
                     }
-
                     //subscribe to that instance property change
                     let topic = ComponentManager.subscribePropertyChange(sourceInstance[uniqueIdSymbol],populatedBindedProperty.bind(null,context));
                     console.log('Subscribing to ', topic);

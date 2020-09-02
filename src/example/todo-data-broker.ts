@@ -24,6 +24,10 @@ class TodoDataBroker extends HTMLElement {
         return this._todoList;
     }
 
+    set todoList(todoList:Todo[]) {
+        this._todoList = todoList;
+    }
+
     @Discover.Field({
         description: "test"
     })
@@ -33,7 +37,7 @@ class TodoDataBroker extends HTMLElement {
         description:'Unique id of the rendered component'
     })
     get numberOfTodos():Number {
-        return this._todoList.length;
+        return this.todoList.length;
     }
 
     constructor () {
@@ -45,29 +49,27 @@ class TodoDataBroker extends HTMLElement {
         description:'Fetch todo items from server'
     })
     fetchTodos () {
-        this._todoList = [];
-
         // fake server fech
-        this._todoList.push({
+        this.todoList = [{
             id: Math.random().toString(36).substr(2, 9),
             title: 'my todo',
             status: TodoStatus.PENDING
-        });
+        }];
 
-        return this._todoList;
+        return this.todoList;
     }
 
     @Discover.Method({
         description:'Add new todo item'
     })
-    addTodoItem (title: string): Todo {
+    addTodoItem (title: string = 'default'): Todo {
         const todo: Todo = {
             id: Math.random().toString(36).substr(2, 9),
             title: title,
             status: TodoStatus.PENDING
         };
 
-        this._todoList.push(todo);
+        this.todoList = [...this._todoList, todo];
         
         return todo;
     }
@@ -76,7 +78,7 @@ class TodoDataBroker extends HTMLElement {
         description:'Check todo item'
     })
     checkTodoItem (id: string): Todo | undefined {
-        const foundTodo = this._todoList.find(todo => todo.id === id) || undefined;
+        const foundTodo = this.todoList.find(todo => todo.id === id) || undefined;
         if (foundTodo) foundTodo.status = TodoStatus.DONE;
         
         return foundTodo;
@@ -86,7 +88,7 @@ class TodoDataBroker extends HTMLElement {
         description:'Uncheck todo item'
     })
     uncheckTodoItem (id: string): Todo | undefined {
-        const foundTodo = this._todoList.find(todo => todo.id === id) || undefined;
+        const foundTodo = this.todoList.find(todo => todo.id === id) || undefined;
         if (foundTodo) foundTodo.status = TodoStatus.PENDING;
         
         return foundTodo;

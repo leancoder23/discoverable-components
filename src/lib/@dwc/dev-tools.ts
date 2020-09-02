@@ -24,9 +24,10 @@ import TraceLog, {
     PropertyTraceLogPayload
 } from './@types/trace-log.js';
 
+import renderjson from './renderjson.js';
+
 interface DevWindow extends Window {
     This: any;
-    renderjson: any
 }
 
 interface IDiscoveredComponentProperty {
@@ -359,9 +360,6 @@ class DwcDevTools extends HTMLElement {
     }
 
     private getRenderedTraceLogs () {
-        (window as DevWindow & typeof globalThis).renderjson.set_icons('▸', '▾');
-        (window as DevWindow & typeof globalThis).renderjson.set_show_to_level(1);
-
         const renderedHistoryItems = this._traceLogs.slice().reverse().filter(item => item.targetId === this._selectedComponentId).map((traceLog: TraceLog) => {
             const renderedTraceLog = function() {
                 const by = function() {
@@ -383,17 +381,36 @@ class DwcDevTools extends HTMLElement {
                         <div class="trace-log-item-subject method">
                             ${(traceLog.payload as MethodTraceLogPayload)?.methodName}
                         </div>
-                        <div class="trace-log-item-output">${(window as DevWindow & typeof globalThis).renderjson((traceLog.payload as MethodTraceLogPayload)?.result) || 'void'}</div>
+                        <div class="trace-log-item-output">${renderjson((traceLog.payload as MethodTraceLogPayload)?.result) || 'void'}</div>
                     `;
                 }
 
                 if (traceLog.type === TraceLogType.PROPERTY_CHANGE) {
-                    return html`
+                    const firstSegment = function() { return html`
                         <div class="trace-log-item-date">${new Intl.DateTimeFormat('default', {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'}).format(traceLog.date)} by ${by}</div>
                         <div class="trace-log-item-badge property">P</div>
-                        <div class="trace-log-item-subject property">
-                            ${(traceLog.payload as PropertyTraceLogPayload)?.property}: <span class="trace-log-property-value">${(traceLog.payload as PropertyTraceLogPayload)?.value}</span>
-                        </div>
+                    `}();
+
+                    const secondSegment = function() {
+                        if (typeof (traceLog.payload as PropertyTraceLogPayload)?.value === 'object') {
+                            return html`
+                                <div class="trace-log-item-subject property">
+                                    ${(traceLog.payload as PropertyTraceLogPayload)?.property}
+                                </div>
+                                <div class="trace-log-item-output">${renderjson((traceLog.payload as PropertyTraceLogPayload)?.value)}</span>
+                            `;
+                        } else {
+                            return html`
+                                <div class="trace-log-item-subject property">
+                                    ${(traceLog.payload as PropertyTraceLogPayload)?.property}: <span class="trace-log-property-value">${(traceLog.payload as PropertyTraceLogPayload)?.value}</span>
+                                </div>
+                            `;
+                        }
+                    }();
+
+                    return html`
+                        ${firstSegment}
+                        ${secondSegment}
                     `;
                 }
             }();
@@ -735,7 +752,7 @@ class DwcDevTools extends HTMLElement {
                     <label>${prop.name}<span style="display: ${prop.type === Object || prop.type === Array ? 'none' : 'initial'}">:</span></label>
                     <input style="display: ${prop.type === Object || prop.type === Array ? 'none' : 'initial'}" type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement)?.value); (event.currentTarget as HTMLElement).blur(); }}}>
                     <div class="description">${prop.description}</div>
-                    <div style="display: ${prop.type === Object || prop.type === Array ? 'initial' : 'none'}" class="object">${(window as DevWindow & typeof globalThis).renderjson(foundComponent.instance[prop.name])}</div>
+                    <div style="display: ${prop.type === Object || prop.type === Array ? 'initial' : 'none'}" class="object">${renderjson(foundComponent.instance[prop.name])}</div>
                 </li>
             `;
         });

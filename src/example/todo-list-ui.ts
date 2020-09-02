@@ -69,24 +69,30 @@ class TodoListUI extends HTMLElement {
         
         const renderedItems = this._todoList.map((item: Todo) => {
             return html`
-                <li>${item.title}</li>
+                <li>
+                    <div>${item.status} - ${item.title}</div>
+                </li>
             `;
         });
 
         render(
             html`
                 <style>
+                    .todo-list {
+                        font-family: sans-serif;
+                    }
                 </style>
                 <div class="todo-list">
-                    <div class="title">${this.listTitle}</div>
+                    <h2 class="title">${this.listTitle}</h2>
                     <ul class="">
-                        ${renderedItems}
+                        
+                        <div>${renderedItems}</div>
                     </ul>
                 </div>
             `,
         this.root);
     
-     }
+    }
 }
 
 customElements.define(TodoListUI.is, TodoListUI);

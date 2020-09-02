@@ -1,7 +1,9 @@
 import { html, render } from '../../node_modules/lit-html/lit-html.js';
 
 import { 
-    Discover
+    Discover,
+    Renderer,
+    Bind
 } from '../lib/@dwc/decorators.js';
 
 import {
@@ -22,7 +24,12 @@ class TodoListUI extends HTMLElement {
     static is = "todo-list-ui";
 
     private root:ShadowRoot;
-    private _todoList:Todo[] = [];
+
+    @Bind({
+        sourceComponentName:"TodoDataBroker",
+        sourceComponentPropertyName:"todoList"
+    })
+    private _todoList:Todo[];
 
     @Discover.Field({
         description:'Title of todo list'
@@ -33,6 +40,7 @@ class TodoListUI extends HTMLElement {
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this.listTitle  = 'My Todo List';
+        this._todoList = [];
     }
 
     connectedCallback () {
@@ -54,7 +62,11 @@ class TodoListUI extends HTMLElement {
         this.updateUI();
     }
 
+    @Renderer
     updateUI() {
+        console.log(this._todoList);
+
+        
         const renderedItems = this._todoList.map((item: Todo) => {
             return html`
                 <li>${item.title}</li>
@@ -73,6 +85,7 @@ class TodoListUI extends HTMLElement {
                 </div>
             `,
         this.root);
+    
      }
 }
 

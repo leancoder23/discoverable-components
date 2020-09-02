@@ -1,5 +1,6 @@
 import { 
-    Discover
+    Discover, 
+    Renderer
 } from '../lib/@dwc/decorators.js';
 
 import {
@@ -8,7 +9,7 @@ import {
 } from '../example/@types/todo.js';
 
 @Discover.Component({
-    name: 'Todo Data Broker',
+    name: 'TodoDataBroker',
     description: 'Data Broker for todo lists'
 })
 class TodoDataBroker extends HTMLElement {
@@ -17,17 +18,27 @@ class TodoDataBroker extends HTMLElement {
     private _todoList:Todo[] = [];
 
     @Discover.Field({
-        description:'Unique id of the rendered component'
+        description:'List of todo items'
     })
     get todoList():Todo[] {
         return this._todoList;
     }
 
     @Discover.Field({
+        description: "test"
+    })
+    testProp:string;
+
+    @Discover.Field({
         description:'Unique id of the rendered component'
     })
     get numberOfTodos():Number {
         return this._todoList.length;
+    }
+
+    constructor () {
+        super();
+        this.testProp = "Test Value"
     }
 
     @Discover.Method({
@@ -79,6 +90,11 @@ class TodoDataBroker extends HTMLElement {
         if (foundTodo) foundTodo.status = TodoStatus.PENDING;
         
         return foundTodo;
+    }
+
+    @Renderer
+    updateUI() {
+
     }
 
     connectedCallback () {

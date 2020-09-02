@@ -19,14 +19,11 @@ class ComponentInfo extends HTMLElement {
 
     private subscribedPropChange:any;
  
-    constructor(){
+    constructor () {
         super();
-        console.log('cmp is loaded ')
         this.root = this.attachShadow({ mode: 'open' });   
         this.subscribedPropChange={}; 
     }
-
-    
 
     handleComponentRegistoryUpdate():void{
         this.updateUI();
@@ -38,12 +35,12 @@ class ComponentInfo extends HTMLElement {
     }
 
     handleComponentTraceLog(args:any){
-        console.log(args);
+        //console.log(args);
     }
 
     connectedCallback(){
         subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
-        subscribeComponentTraceLog(this.handleComponentTraceLog);
+        //subscribeComponentTraceLog(this.handleComponentTraceLog);
         this.updateUI();
     }   
     disconnectedCallback(){
@@ -52,7 +49,7 @@ class ComponentInfo extends HTMLElement {
     } 
     
     updateObjectValue(event:any,identifier:string,property:string){
-       let v =  Number(event.target.value);
+       let v =  event.target.value;
        setProperty(identifier,property,v);
     }
 

@@ -1,13 +1,13 @@
 import '../../../node_modules/reflect-metadata/Reflect.js';
-import {EventBus} from './event-bus.js';
+import { EventBus } from './event-bus.js';
+import TraceLog from './@types/trace-log.js';
 
 interface IComponentRegistory{
     [key:string]:IComponentDescriptor;
 } 
 
 let _componentRegistory:IComponentRegistory={}
-const EVENT_COMPONENT_REGISTORY_UPDATED:string='cmp:reg:updated';
-
+const EVENT_COMPONENT_REGISTORY_UPDATED:string = 'cmp:reg:updated';
 
 interface IComponentDescriptor{
     /**
@@ -43,8 +43,7 @@ function notifyComponentRegisteryIsUpdated(){
  * This method should be called when component is initiazed or loaded in the DOM
  * @param descriptor component descriptor
  */
-export function registerComponent(descriptor:IComponentDescriptor){
-
+export function registerComponent(descriptor:IComponentDescriptor) {
     descriptor.properties=Reflect.getMetadata(propertyMetadataKey,descriptor.classMetadata.type.prototype);
     descriptor.methods=Reflect.getMetadata(methodMetadataKey,descriptor.classMetadata.type.prototype);
 
@@ -65,7 +64,6 @@ export function deRegisterComponent(identifier:string){
     }
      
 }
-
 
 let propertyMetadataKey = Symbol('properties');
 /**
@@ -105,10 +103,9 @@ export function registerMethod(target:Object,methodKey:string,metadataInfo?:Obje
         methods.push(methodInfo);
     } else {
         methods = [methodInfo];
-      Reflect.defineMetadata(methodMetadataKey, methods, target);
+        Reflect.defineMetadata(methodMetadataKey, methods, target);
     }
 }
-
 
 /**
  * Get the property change event name for a specific  component
@@ -188,7 +185,6 @@ export function getAvailableMethods(target:Function):any{
     return Reflect.getMetadata(methodMetadataKey,target.prototype);
 }
 
-
 /**
  * Returns all available properties
  * @param target 
@@ -228,26 +224,25 @@ export function invokeMethod(identifer:string,methodName:string,...args:any[]){
     }
 }
 
-
-
 const EVENT_COMPONENT_TRACE_LOG:string='cmp:trace:log';
 
-export function fireComponentTraceLog(trace:any){
-    EventBus.emit(EVENT_COMPONENT_TRACE_LOG,trace);
+export function fireComponentTraceLog (traceLog:TraceLog) {
+    console.log('[Component Manager] fire trace log:', traceLog);
+    EventBus.emit(EVENT_COMPONENT_TRACE_LOG, traceLog);
 }
 
 /**
  * Subscribe component trace log
  * @param eventHandler 
  */
-export function subscribeComponentTraceLog(eventHandler:Function){
-    EventBus.subscribe(EVENT_COMPONENT_TRACE_LOG,eventHandler);
+export function subscribeComponentTraceLog (eventHandler:Function) {
+    EventBus.subscribe(EVENT_COMPONENT_TRACE_LOG, eventHandler);
 }
 /**
  * Unsubscribe component trace log
  * @param eventHandler 
  */
-export function unsubscribeComponentTraceLog(eventHandler?:Function){
-    EventBus.unsubscribe(EVENT_COMPONENT_TRACE_LOG,eventHandler);
+export function unsubscribeComponentTraceLog (eventHandler?:Function) {
+    EventBus.unsubscribe(EVENT_COMPONENT_TRACE_LOG, eventHandler);
 }
 

@@ -1,5 +1,12 @@
 
-import {html, render, directive} from '../node_modules/lit-html/lit-html.js';
+import {
+    html, 
+    render, 
+    directive
+} from '../../../node_modules/lit-html/lit-html.js';
+
+import { EventBus } from './event-bus.js';
+
 import {
     getAllAvailableComponentInfo,
     subscribeComponentRegistoryUpdate,
@@ -9,8 +16,19 @@ import {
     setProperty,
     getAvailableMethods,
     getAvailableProperties
-} from './lib/@dwc/component-manager.js';
+} from './component-manager.js';
 
+import TraceLog, { 
+    TraceLogType, 
+    MethodTraceLogPayload,
+    PropertyTraceLogPayload
+} from './@types/trace-log.js';
+
+import renderjson from './renderjson.js';
+
+interface DevWindow extends Window {
+    This: any;
+}
 
 interface IDiscoveredComponentProperty {
     name: string
@@ -37,23 +55,6 @@ enum DetailsPane {
     HISTORY = 'HISTORY'
 }
 
-enum HistoryItemType {
-    METHOD_CALL = 'METHOD',
-    PROPERTY_CHANGE = 'PROPERTY_CHANGE'
-}
-
-interface HistoryItem {
-    date: Date,
-    senderComponentName: string,
-    senderComponentId?: string,
-    receiverComponentName: string,
-    receiverComponentId?: string,
-    type: HistoryItemType,
-    subject: string,
-    input?: string,
-    output?: string
-}
-
 class DwcDevTools extends HTMLElement {
     static is = "dwc-dev-tools";
     private root:ShadowRoot;
@@ -62,15 +63,7 @@ class DwcDevTools extends HTMLElement {
     private _showDwcGuide = false;
     private _selectedDetailsPane = DetailsPane.DISCOVERY;
     private _selectedComponentId:string | undefined = undefined;
-    private _historyItems:HistoryItem[] = [{
-        date: new Date(),
-        senderComponentName: "DevTools",
-        receiverComponentId: "fsdfsd",
-        receiverComponentName: "myComponentName",
-        subject: "performMagicStuff()",
-        type: HistoryItemType.METHOD_CALL,
-        output: "Test output"
-    }];
+    private _traceLogs:TraceLog[] = [];
  
     constructor(){
         super();
@@ -82,10 +75,11 @@ class DwcDevTools extends HTMLElement {
      */
     connectedCallback () {
         subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentTraceLog(this.handleTraceLogArrival.bind(this));
 
-        window.addEventListener("devtools:component-selection", (event: Event) => {
+        EventBus.subscribe("devtools:component-selection", (event: any) => {
             if (this._showDwcGuide) {
-                this.selectComponent((event as CustomEvent).detail?.identifier);
+                this.selectComponent(event?.identifier);
             }
         });
 
@@ -100,12 +94,16 @@ class DwcDevTools extends HTMLElement {
     disconnectedCallback () {
         unsubscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate);
 
-        //subscribeComponentTraceLog();
-
         window.removeEventListener('resize', this.updateUI.bind(this));
     }
 
     handleComponentRegistoryUpdate():void {
+        this.updateUI();
+    }
+
+    handleTraceLogArrival(traceLog: TraceLog):void {
+        this._traceLogs.push(traceLog);
+
         this.updateUI();
     }
 
@@ -133,33 +131,21 @@ class DwcDevTools extends HTMLElement {
     selectComponent(id:string):void {
         this._selectedComponentId = id;
 
+        (window as DevWindow & typeof globalThis).This = this.getComponentById(this._selectedComponentId);
+
         this.updateUI();
     }
 
     updatePropertyValue(comp: IDiscoveredComponent, propertyName: string, value: string):void {
         console.log(`[dev tools] update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
+
+        setProperty(comp.id, propertyName, value);
     }
 
     executeFunction(comp: IDiscoveredComponent, methodName: string):void {
         console.log(`[dev tools] execute method "${methodName}" on component "${comp.name}"`);
 
-        const result:any = invokeMethod(comp.id, methodName);
-
-        this.logHistoryItem({
-            date: new Date(),
-            senderComponentName: "DevTools",
-            receiverComponentId: comp.id,
-            receiverComponentName: comp.name,
-            subject: methodName + "()",
-            type: HistoryItemType.METHOD_CALL,
-            output: ""
-        });
-    }
-
-    logHistoryItem(historyItem: HistoryItem) {
-        this._historyItems.push(historyItem);
-
-        this.updateUI();
+        invokeMethod(comp.id, methodName);
     }
 
     private getDiscoveredComponents():Array<IDiscoveredComponent> {
@@ -177,12 +163,16 @@ class DwcDevTools extends HTMLElement {
         });
     }
 
+    getComponentById(id: string):IDiscoveredComponent | undefined {
+        return this.getDiscoveredComponents().find((comp) => comp.id === id);
+    }
+
     getSelectedComponent():IDiscoveredComponent | undefined {
         if (!this._selectedComponentId) {
             return undefined;
         }
 
-        return this.getDiscoveredComponents().find((comp) => comp.id === this._selectedComponentId);
+        return this.getComponentById(this._selectedComponentId);
     }
 
     private getRenderedDwcGuide (label: string | undefined) {
@@ -332,7 +322,7 @@ class DwcDevTools extends HTMLElement {
                     background-size: contain;
                 }
 
-                .history-pane-btn > .inactive-icon {
+                .trace-log-pane-btn > .inactive-icon {
                     display: inline-block;
                     width: 24px;
                     height: 24px;
@@ -341,7 +331,7 @@ class DwcDevTools extends HTMLElement {
                     background-size: contain;
                 }
 
-                .history-pane-btn > .active-icon {
+                .trace-log-pane-btn > .active-icon {
                     display: inline-block;
                     width: 24px;
                     height: 24px;
@@ -363,66 +353,137 @@ class DwcDevTools extends HTMLElement {
                 </div>
                 <div class="toolbar-right">
                     <a class="toolbar-btn discovery-pane-btn" href="#" @click=${()=>this.selectDetailsPane(DetailsPane.DISCOVERY)}><div class="${this._selectedDetailsPane === DetailsPane.DISCOVERY ? 'active-icon' : 'inactive-icon'}"></div></a>
-                    <a class="toolbar-btn history-pane-btn" href="#" @click=${()=>this.selectDetailsPane(DetailsPane.HISTORY)}><div class="${this._selectedDetailsPane === DetailsPane.HISTORY ? 'active-icon' : 'inactive-icon'}"></div></a>
+                    <a class="toolbar-btn trace-log-pane-btn" href="#" @click=${()=>this.selectDetailsPane(DetailsPane.HISTORY)}><div class="${this._selectedDetailsPane === DetailsPane.HISTORY ? 'active-icon' : 'inactive-icon'}"></div></a>
                 </div>
             </div>
         `;
     }
 
-    private getRenderedHistory () {
-        const renderedHistoryItems = this._historyItems.slice().reverse().filter(item => item.receiverComponentId === this._selectedComponentId).map((historyItem: HistoryItem) => {
+    private getRenderedTraceLogs () {
+        const renderedHistoryItems = this._traceLogs.slice().reverse().filter(item => item.targetId === this._selectedComponentId).map((traceLog: TraceLog) => {
+            const renderedTraceLog = function() {
+                const by = function() {
+                    if (traceLog.sourceId) {
+                        return html`
+                            <a href="#">${traceLog.sourceId}</a>
+                        `;
+                    }
+                    
+                    return html`
+                        <i>unknown</i>
+                    `;
+                }();
+
+                if (traceLog.type === TraceLogType.METHOD_CALL) {
+                    return html`
+                        <div class="trace-log-item-date">${new Intl.DateTimeFormat('default', {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'}).format(traceLog.date)} by ${by}</div>
+                        <div class="trace-log-item-badge method">M</div>
+                        <div class="trace-log-item-subject method">
+                            ${(traceLog.payload as MethodTraceLogPayload)?.methodName}
+                        </div>
+                        <div class="trace-log-item-output">${renderjson((traceLog.payload as MethodTraceLogPayload)?.result) || 'void'}</div>
+                    `;
+                }
+
+                if (traceLog.type === TraceLogType.PROPERTY_CHANGE) {
+                    const firstSegment = function() { return html`
+                        <div class="trace-log-item-date">${new Intl.DateTimeFormat('default', {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'}).format(traceLog.date)} by ${by}</div>
+                        <div class="trace-log-item-badge property">P</div>
+                    `}();
+
+                    const secondSegment = function() {
+                        if (typeof (traceLog.payload as PropertyTraceLogPayload)?.value === 'object') {
+                            return html`
+                                <div class="trace-log-item-subject property">
+                                    ${(traceLog.payload as PropertyTraceLogPayload)?.property}
+                                </div>
+                                <div class="trace-log-item-output">${renderjson((traceLog.payload as PropertyTraceLogPayload)?.value)}</span>
+                            `;
+                        } else {
+                            return html`
+                                <div class="trace-log-item-subject property">
+                                    ${(traceLog.payload as PropertyTraceLogPayload)?.property}: <span class="trace-log-property-value">${(traceLog.payload as PropertyTraceLogPayload)?.value}</span>
+                                </div>
+                            `;
+                        }
+                    }();
+
+                    return html`
+                        ${firstSegment}
+                        ${secondSegment}
+                    `;
+                }
+            }();
+            
             return html`
-                <li class="history-item">
-                    <div class="history-item-date">${new Intl.DateTimeFormat('default', {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'}).format(historyItem.date)} by <a href="#">${historyItem.senderComponentName}</a></div>
-                    <div class="history-item-badge">M</div><div class="history-item-subject">${historyItem.subject}</div>
-                    <div class="history-item-output">&rarr; ${historyItem.output}</div>
+                <li class="trace-log-item">
+                    ${renderedTraceLog}
                 </li>
             `;
         });
 
         return html`
             <style>
-                .history-items {
-                    --history-color: #F24730;
+                .trace-log-items {
+                    --method-color: #F24730;
+                    --property-color: #ED9B0C;
 
                     margin: 20px 10px;
                     padding: 0;
                     list-style: none;
                 }
 
-                .history-item {
+                .trace-log-item {
                     margin-bottom: 10px;
                 }
 
-                .history-item-date {
+                .trace-log-item-date {
                     font-size: 0.8em;
                     font-family: sans-serif;
                     color: #AAA;
                     letter-spacing: 0.3px;
                 }
 
-                .history-item-badge {
+                .trace-log-item-badge {
                     display: inline-block;
                     margin-right: 10px;
                     padding: 1px 5px;
-                    background: var(--history-color);
                     color: white;
                     border-radius: 3px;
                     font-size: 0.7em;
                 }
 
-                .history-item-subject {
+                .trace-log-item-badge.method {
+                    background: var(--method-color);
+                }
+
+                .trace-log-item-badge.property {
+                    background: var(--property-color);
+                }
+
+                .trace-log-item-subject {
                     display: inline-block;
                     font-family: monospace;
-                    color: var(--history-color);
                     font-size: 1.2em;
                 }
 
-                .history-item-output {
+                .trace-log-item-subject.method {
+                    color: var(--method-color);
+                }
+
+                .trace-log-item-subject.property {
+                    color: var(--property-color);
+                }
+
+                .trace-log-item-output {
                     font-size: 0.9em;
                 }
+
+                .trace-log-property-value {
+                    color: #000;
+                }
             </style>
-            <ul class="history-items">
+            <ul class="trace-log-items">
                 ${renderedHistoryItems}
             </ul>
         `;
@@ -603,6 +664,10 @@ class DwcDevTools extends HTMLElement {
                     color: #AAA;
                 }
 
+                .props-list .object {
+                    font-size: 0.9em;
+                }
+
                 .methods-list .trigger-func-btn {
                     border: 1px solid var(--primary-color);
                     border-radius: 3px;
@@ -624,6 +689,37 @@ class DwcDevTools extends HTMLElement {
 
                 .history {
 
+                }
+
+                .renderjson {
+                    font-family: sans-serif;
+                    font-size: 0.95em;
+                    margin: 5px 0 0 0;
+                    color: #333;
+                    line-height: 1.4em;
+                    letter-spacing: 0.4px;
+                }
+
+                .renderjson .disclosure {
+                    text-decoration: none;
+                    color: #888;
+                    padding-right: 3px;
+                    cursor: default;
+                }
+
+                .renderjson a {
+                    color: #888;
+                    padding: 0 3px;
+                    text-decoration: none;
+                    cursor: default;
+                }
+
+                .renderjson .string {
+                    color: #BF4226;
+                }
+
+                .renderjson .number {
+                    color: #3832A6;
                 }
             </style>
         `;
@@ -650,11 +746,13 @@ class DwcDevTools extends HTMLElement {
 
         const foundComponent = componentList.find(comp => comp.id === this._selectedComponentId);
         const renderedPropsList = foundComponent?.props?.map((prop) => {
+            console.log(prop);
             return html`
                 <li>
-                    <label>${prop.name}:</label>
-                    <input type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement).value); (event.currentTarget as HTMLElement).blur(); }}}>
+                    <label>${prop.name}<span style="display: ${prop.type === Object || prop.type === Array ? 'none' : 'initial'}">:</span></label>
+                    <input style="display: ${prop.type === Object || prop.type === Array ? 'none' : 'initial'}" type="text" .value=${foundComponent.instance[prop.name] || ''} @keydown=${(event: KeyboardEvent) => { if (event.keyCode === 13) { this.updatePropertyValue(foundComponent, prop.name, (event.target as HTMLInputElement)?.value); (event.currentTarget as HTMLElement).blur(); }}}>
                     <div class="description">${prop.description}</div>
+                    <div style="display: ${prop.type === Object || prop.type === Array ? 'initial' : 'none'}" class="object">${renderjson(foundComponent.instance[prop.name])}</div>
                 </li>
             `;
         });
@@ -662,7 +760,7 @@ class DwcDevTools extends HTMLElement {
         let renderedMethodList = foundComponent?.methods?.map((method) => {
             return html`
                 <li>
-                    <span class="name">${method.name}()</span><button class="trigger-func-btn" @click=${() => this.executeFunction(foundComponent, method.name)}>call</button>
+                    <span class="name">${method.name}()</span><button class="trigger-func-btn" @click=${() => this.executeFunction(foundComponent, method.name)}>invoke</button>
                     <div class="description">${method.description}</div>
                 </li>
             `;
@@ -696,7 +794,7 @@ class DwcDevTools extends HTMLElement {
                     </div>
                     <div style="${!this._selectedComponentId ? 'display: none;' : ''}" class="details-pane history ${this._selectedDetailsPane === DetailsPane.HISTORY ? 'selected' : ''}">
                     <section>history</section>
-                    ${this.getRenderedHistory()}
+                    ${this.getRenderedTraceLogs()}
                     </div>
                 </div>
             </div>`,

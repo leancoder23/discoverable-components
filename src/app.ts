@@ -22,20 +22,20 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     private root:ShadowRoot;
     private _counter:number;
     private _id:string;
-
-
+    
     @Bind({
         sourceComponentName:"TestCMP",
         sourceComponentPropertyName:"testProp"
     })
-     testCmpTestProp:string;
-    constructor(){
+    testCmpTestProp:string;
+
+    constructor() {
         console.log('my app constructor is called');
         super();
         this.root = this.attachShadow({ mode: 'open' });
         this._counter=0;
         this._id=Math.random().toString(36).substr(2, 9);
-       this.testCmpTestProp="";
+        this.testCmpTestProp="";
     }
 
     @Api()
@@ -65,7 +65,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     }
 
     disconnectedCallback() {
-    //Perform cleanup here
+        //Perform cleanup here
     } 
 
     attributeChangedCallback(name:string, oldValue:any, newValue:any){

@@ -120,15 +120,18 @@ function getPropertyChangeEventName(identifier:string):string{
  * @param identifier Component unique id
  */
 export function firePropertyChangeEvent(identifier:string){
+    console.log(`firing property change event for ${identifier}`);
     EventBus.emit(getPropertyChangeEventName(identifier))
 }
 
 /**
- * Subscribe to property change event of the specific component
+ * Subscribe to property change event of the specific component, return topic name which user has subscribed
  * @param identifer Component unique identifer
  */
-export function subscribePropertyChange(identifer:string,eventHandler:Function){
-    EventBus.subscribe(getPropertyChangeEventName(identifer),eventHandler);
+export function subscribePropertyChange(identifer:string,eventHandler:Function):string{
+    let topic:string = getPropertyChangeEventName(identifer);
+    EventBus.subscribe(topic,eventHandler);
+    return topic;
 }
 
 /**
@@ -144,6 +147,7 @@ export function unsubscribePropertyChange(identifer:string,eventHandler:Function
  */
 export function subscribeComponentRegistoryUpdate(eventHandler:Function){
     EventBus.subscribe(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
+    return EVENT_COMPONENT_REGISTORY_UPDATED;
 }
 /**
  * Remove component registory update event listner
@@ -161,6 +165,16 @@ export function getAllAvailableComponentInfo(){
        return  _componentRegistory[identifer];
     });
     //return _componentRegistory;
+}
+
+/**
+ *TODO: Need to restrict the access to only decorators not to other component, this require refactoring later
+ *
+ * @export
+ * @returns {IComponentRegistory}
+ */
+export function getComponentRegistory():IComponentRegistory{
+    return _componentRegistory;
 }
 
 /**

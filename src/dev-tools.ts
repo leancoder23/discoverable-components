@@ -129,18 +129,17 @@ class DwcDevTools extends HTMLElement {
         this._container.style.cursor = "move";
         this._container.addEventListener("mouseup", this.handleMouseUp);
         document.body.addEventListener("mousemove", this.handleMouseMove);
-        document.body.addEventListener("mouseleave", this.handleMouseUp);
+        document.body.addEventListener("mouseup", this.handleMouseUp);
     }
 
     handleMouseUp() {
         this._container.style.cursor = "default";
         document.body.removeEventListener("mousemove", this.handleMouseMove);
-        document.body.removeEventListener("mouseleave", this.handleMouseUp);
+        document.body.removeEventListener("mouseup", this.handleMouseUp);
     }
 
     handleMouseMove(event: any) {
         this._container.style.top = `${event.clientY}px`;
-        this._container.style.left = `${event.clientX}px`;
     }
     /* Drag and drop methods */
 

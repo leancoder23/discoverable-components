@@ -97,6 +97,19 @@ class DwcDevTools extends HTMLElement {
             }
         );
 
+        window.addEventListener(
+            "keydown",
+            (event) => {
+                const evtobj = window.event ? event : event;
+
+                // Ctrl + D
+                if (evtobj.keyCode == 68 && evtobj.ctrlKey) {
+                    this.toggleTools();
+                }
+            },
+            false
+        );
+
         window.addEventListener("resize", this.updateUI.bind(this));
 
         this.updateUI();
@@ -566,6 +579,7 @@ class DwcDevTools extends HTMLElement {
                     --primary-color: #4e38f2;
                     --dev-tools-height: 300px;
 
+                    display: block;
                     box-sizing: border-box;
                     background: #fff;
                     position: fixed;
@@ -584,10 +598,7 @@ class DwcDevTools extends HTMLElement {
                 }
 
                 .dev-tools-outer.closed {
-                    margin-bottom: calc(-1 * var(--dev-tools-height));
-                    -webkit-box-shadow: none;
-                    -moz-box-shadow: none;
-                    box-shadow: none;
+                    display: none;
                 }
 
                 .dev-tools-outer.closed > .dev-tools-floating-btn {
@@ -616,14 +627,6 @@ class DwcDevTools extends HTMLElement {
                     width: 20px;
                     height: 20px;
                     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='512' viewBox='0 0 329.2693 329' width='512'%3E%3Cpath d='M194.8008 164.7695l128.211-128.2148c8.3437-8.3399 8.3437-21.8242 0-30.164-8.34-8.34-21.8243-8.34-30.1641 0L164.6328 134.6054 36.4218 6.3906c-8.3437-8.3398-21.8241-8.3398-30.164 0-8.3437 8.3399-8.3437 21.8242 0 30.164l128.211 128.215L6.2577 292.9843c-8.3437 8.3398-8.3437 21.8242 0 30.164 4.1563 4.1602 9.6211 6.25 15.082 6.25 5.461 0 10.922-2.0898 15.082-6.25l128.211-128.2148 128.2149 128.2148c4.1601 4.1602 9.621 6.25 15.082 6.25s10.9219-2.0898 15.082-6.25c8.3438-8.3398 8.3438-21.8242 0-30.164zm0 0' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%234E38F2'/%3E%3C/svg%3E");
-                    background-size: contain;
-                }
-
-                .dev-tools-floating-btn > .open-icon {
-                    display: inline-block;
-                    width: 27px;
-                    height: 27px;
-                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 343.5 343.5' width='512' height='512'%3E%3Cpath d='M322.05 161.8h-182.6c-5.5 0-10 4.5-10 10s4.5 10 10 10h182.6c5.5 0 10-4.5 10-10s-4.4-10-10-10zM57.95 125.3c-25.7 0-46.5 20.8-46.5 46.5s20.8 46.5 46.5 46.5 46.5-20.8 46.5-46.5-20.8-46.5-46.5-46.5zm0 73c-14.7 0-26.5-11.9-26.5-26.5 0-14.7 11.9-26.5 26.5-26.5s26.5 11.9 26.5 26.5-11.9 26.5-26.5 26.5zM322.05 36.8h-182.6c-5.5 0-10 4.5-10 10s4.5 10 10 10h182.6c5.5 0 10-4.5 10-10s-4.4-10-10-10zM57.95 0c-25.7 0-46.5 20.8-46.5 46.5S32.25 93 57.95 93s46.5-20.8 46.5-46.5c0-25.6-20.8-46.4-46.5-46.5zm0 73.1c-14.7 0-26.5-11.9-26.5-26.5s11.9-26.5 26.5-26.5c14.7 0 26.5 11.9 26.5 26.5s-11.9 26.5-26.5 26.5zM322.05 286.8h-182.6c-5.5 0-10 4.5-10 10s4.5 10 10 10h182.6c5.5 0 10-4.5 10-10s-4.4-10-10-10zM57.95 250.5c-25.7 0-46.5 20.8-46.5 46.5s20.8 46.5 46.5 46.5 46.5-20.8 46.5-46.5c0-25.6-20.8-46.5-46.5-46.5zm0 73.1c-14.7 0-26.5-11.9-26.5-26.5 0-14.7 11.9-26.5 26.5-26.5 14.7 0 26.5 11.9 26.5 26.5s-11.9 26.5-26.5 26.5z' data-original='%23000000' class='active-path' data-old_color='%23000000' fill='%234E38F2'/%3E%3C/svg%3E");
                     background-size: contain;
                 }
 
@@ -844,11 +847,7 @@ class DwcDevTools extends HTMLElement {
                         class="dev-tools-floating-btn"
                         href="#"
                         @click=${() => this.toggleTools()}
-                        ><div
-                            class="${this._visible
-                                ? "close-icon"
-                                : "open-icon"}"
-                        ></div
+                        ><div class="close-icon"></div
                     ></a>
 
                     ${this.getRenderedToolbar()}

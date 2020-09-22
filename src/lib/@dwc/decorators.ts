@@ -157,15 +157,21 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
                         context[binderInfo.targetPropertyName] = Array.isArray(propertyValue)?[...propertyValue]:{...propertyValue}; //assign copy of it                       
                     }
                     //subscribe to that instance property change
-                    let topic = ComponentManager.subscribePropertyChange(sourceInstance[uniqueIdSymbol],populatedBindedProperty.bind(null,context));
-                    console.log('Subscribing to ', topic);
-                    context[subscriptionSymbol][topic] = populatedBindedProperty; //keep track of subscription to clean it when component is unloaded
+                    let instancePropertyChangeEventName = ComponentManager.getPropertyChangeEventName(sourceInstance[uniqueIdSymbol]);
+                    if(!context[subscriptionSymbol][instancePropertyChangeEventName]){
+                        let populatedBindedPropertyFn = populatedBindedProperty.bind(null,context)
+                        ComponentManager.subscribePropertyChange(sourceInstance[uniqueIdSymbol],populatedBindedPropertyFn);
+                        context[subscriptionSymbol][instancePropertyChangeEventName] = populatedBindedPropertyFn; //keep track of subscription to clean it when component is unloaded
 
+                    }
+                     
                     return true;
                 }
             }
             return false;
         }
+
+        
 
         const populatedBindedProperty = function(context:any){
 

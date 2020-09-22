@@ -14,10 +14,15 @@ interface IListener{
         this.listeners={};
     }
     private _registerListener(topic:string, callback:Function) {
-        this.listeners[topic] = this.listeners[topic] || [];
-        this.listeners[topic].push({
-          callback: callback
-        });
+
+        let listeners = this.listeners[topic] || [];
+        //Add specific listner only once
+        if(listeners.findIndex((listner)=>listner.callback==callback)===-1){
+          listeners.push({
+            callback: callback
+          });
+        }
+        this.listeners[topic] = listeners;
     }
 
     /**

@@ -114,7 +114,7 @@ export function registerMethod(target:Object,methodKey:string,metadataInfo?:Obje
  * Get the property change event name for a specific  component
  * @param identifier Component unique identifer
  */
-function getPropertyChangeEventName(identifier:string):string{
+export function getPropertyChangeEventName(identifier:string):string{
     return `cmp:${identifier}:prop:changed`;
 }
 

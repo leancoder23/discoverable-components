@@ -267,7 +267,8 @@ export function Api(dwcApiMetadata?:IdwcApiMetadata){
                     identifer:this[uniqueIdSymbol],
                     method:key,
                     args:args,
-                    result:result
+                    result:result,
+                    //callStack: new Error().stack
                 });
                 return result;
             }

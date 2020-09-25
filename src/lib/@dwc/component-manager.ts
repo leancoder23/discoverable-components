@@ -111,7 +111,7 @@ export function registerMethod(target:Object,methodKey:string,metadataInfo?:Obje
  * Get the property change event name for a specific  component
  * @param identifier Component unique identifer
  */
-function getPropertyChangeEventName(identifier:string):string{
+export function getPropertyChangeEventName(identifier:string):string{
     return `cmp:${identifier}:prop:changed`;
 }
 
@@ -219,16 +219,21 @@ export function invokeMethod(identifer:string,methodName:string,...args:any[]){
     if(Reflect.has(_componentRegistory,identifer)){
         let cmpInfo = _componentRegistory[identifer];
         if(Reflect.has(cmpInfo.classMetadata.type.prototype,methodName)){
+           // console.log(`invokeMethod called for ${methodName}  of ${identifer} and caller is ${Function.caller}`);
             cmpInfo.instance[methodName].apply(cmpInfo.instance,args);
         }
     }
 }
 
+/**
+ * When a component exposed property is updated or method is invoked a component trace log event is fired.
+ * Subscriber can subscribe to this event to get the info regarding property change or methods invoked
+ */
 const EVENT_COMPONENT_TRACE_LOG:string='cmp:trace:log';
 
-export function fireComponentTraceLog (traceLog:TraceLog) {
-    console.log('[Component Manager] fire trace log:', traceLog);
-    EventBus.emit(EVENT_COMPONENT_TRACE_LOG, traceLog);
+export function fireComponentTraceLog(trace:any){
+    //console.log(trace); //TODO:remove
+    EventBus.emit(EVENT_COMPONENT_TRACE_LOG,trace);
 }
 
 /**

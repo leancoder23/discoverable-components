@@ -6,7 +6,8 @@ import{
     IDiscoverableWebComponent,
     Api,
     Renderer,
-    Bind
+    Bind,
+    Discover
 } from './lib/@dwc/decorators.js';
 
 @DiscoverableWebComponent({
@@ -37,6 +38,12 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
         this._id=Math.random().toString(36).substr(2, 9);
         this.testCmpTestProp="";
     }
+
+
+    @Discover.Field({
+        description:'test array to bind'
+    })
+  
 
     @Api()
     get uniqueId():string{

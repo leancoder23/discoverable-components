@@ -49,6 +49,8 @@ class TodoDataBroker extends HTMLElement {
         description:'Fetch todo items from server'
     })
     fetchTodos () {
+        console.log('[fetchTodos] triggered');
+
         // fake server fech
         this.todoList = [{
             id: Math.random().toString(36).substr(2, 9),

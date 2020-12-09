@@ -30,7 +30,7 @@ interface IListener{
        * @param {string} topic - name of the event.
        * @param {function} callback - callback executed when this event is triggered
        */
-      subscribe(topic:string, callback:Function) {
+      subscribe(topic: string, callback: Function): void {
         this._registerListener(topic, callback);
       }
 
@@ -38,7 +38,7 @@ interface IListener{
        * Kill an event with all it's callbacks
        * @param {string} topic - name of the event.
        */
-      unsubscribe(topic:string,callback?:Function) {
+      unsubscribe(topic: string,callback?: Function): void {
 
         if(Reflect.has(this.listeners,topic)){
             if(!callback){

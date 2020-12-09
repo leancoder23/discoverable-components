@@ -1,12 +1,3 @@
-
-import {
-    html, 
-    render, 
-    directive
-} from '../../../node_modules/lit-html/lit-html.js';
-
-import { EventBus } from './event-bus.js';
-
 import {
     getAllAvailableComponentInfo,
     subscribeComponentRegistoryUpdate,
@@ -15,14 +6,15 @@ import {
     invokeMethod,
     setProperty,
     getAvailableMethods,
-    getAvailableProperties
-} from './component-manager.js';
+    getAvailableProperties,
+    EventBus
+} from '@dwc/core';
 
-import TraceLog, { 
-    TraceLogType, 
-    MethodTraceLogPayload,
-    PropertyTraceLogPayload
-} from './@types/trace-log.js';
+import {
+    html, 
+    render, 
+    directive
+} from 'lit-html';
 
 import renderjson from './renderjson.js';
 
@@ -802,6 +794,5 @@ class DwcDevTools extends HTMLElement {
     }
 
 }
-
 
 customElements.define(DwcDevTools.is, DwcDevTools);

@@ -1,6 +1,4 @@
-import '../../../node_modules/reflect-metadata/Reflect.js';
-import { EventBus } from './event-bus.js';
-import TraceLog from './@types/trace-log.js';
+import { EventBus } from './event-bus';
 
 interface IComponentRegistory{
     [key:string]:IComponentDescriptor;
@@ -160,7 +158,7 @@ export function unsubscribeComponentRegistoryUpdate(eventHandler:Function){
 /**
  * Returns the component registery
  */
-export function getAllAvailableComponentInfo(){
+export function getAllAvailableComponentInfo(): Array<any> {
     return Object.keys(_componentRegistory).map((identifer)=> {
        return  _componentRegistory[identifer];
     });

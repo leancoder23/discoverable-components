@@ -1,6 +1,8 @@
-import * as  ComponentManager from './component-manager.js';
-import TraceLog, { TraceLogType } from './@types/trace-log.js';
-import { EventBus } from './event-bus.js';
+import 'reflect-metadata';
+import * as  ComponentManager from './component-manager';
+import { EventBus } from './event-bus';
+
+import { TraceLogType } from './@types/trace-log';
 
 /**
  * hidden property for component unique id

@@ -1,20 +1,17 @@
-enum TraceLogType {
-    METHOD_CALL = 'METHOD_CALL',
-    PROPERTY_CHANGE = 'PROPERTY_CHANGE'
-}
+import { TraceLogType } from './trace-log';
 
-interface PropertyTraceLogPayload {
+export interface PropertyTraceLogPayload {
     property: string,
     value: any
 }
 
-interface MethodTraceLogPayload {
+export interface MethodTraceLogPayload {
     methodName: string,
     args: any[],
     result: any
 }
 
-interface TraceLog {
+export interface TraceLog {
     date: Date,
     type: TraceLogType,
     sourceId?: string, // should become mandatory

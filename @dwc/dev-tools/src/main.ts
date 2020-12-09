@@ -10,6 +10,14 @@ import {
     EventBus
 } from '@dwc/core';
 
+import { TraceLogType } from './@types/trace-log';
+
+import { 
+    PropertyTraceLogPayload,
+    MethodTraceLogPayload,
+    TraceLog
+} from './@types/interfaces';
+
 import {
     html, 
     render, 

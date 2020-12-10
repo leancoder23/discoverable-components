@@ -65,7 +65,7 @@ class DwcDevTools extends HTMLElement {
     static is = "dwc-dev-tools";
     private root:ShadowRoot;
 
-    private _visible:boolean = true;
+    private _visible:boolean = false;
     private _showDwcGuide = false;
     private _selectedDetailsPane = DetailsPane.DISCOVERY;
     private _selectedComponentId:string | undefined = undefined;

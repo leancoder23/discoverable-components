@@ -1,4 +1,8 @@
-
+import Logger, { LogLevel } from './utils/logger';
+const logger = new Logger({
+    logLevel: LogLevel.DEBUG,
+    debugPrefix: 'event bus'
+});
 
 type EventReceiver = {
     callback:Function
@@ -60,7 +64,7 @@ interface IListener{
        * @param {string} topic - name of the event.
        */
       async emit(topic:string,...args:any[]) {
-        console.log('[Event Bus] emit:', topic);
+        logger.debug('emit:', topic);
         const receivers = this.getTopicReceivers(topic);
         // Run promises
         receivers.map(

@@ -1,3 +1,9 @@
+import Logger, { LogLevel } from './utils/logger';
+const logger = new Logger({
+    logLevel: LogLevel.DEBUG,
+    debugPrefix: 'decorators'
+});
+
 import 'reflect-metadata';
 import * as  ComponentManager from './component-manager';
 import { EventBus } from './event-bus';
@@ -237,7 +243,9 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
 function callRenderer(target:any,context:any){
    
     let renderMethodName = Reflect.getMetadata(renderMetadataKey,target.prototype);
-    console.log(renderMethodName);
+
+    logger.debug(renderMethodName);
+
     if(renderMethodName){
         let renderer =  <Function>Reflect.get(target.prototype,renderMethodName);
         renderer.apply(context);

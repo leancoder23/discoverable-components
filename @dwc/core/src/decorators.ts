@@ -49,6 +49,8 @@ interface IdwcClassMetadata{
  * @param dwcClassMetadata  
  */
 export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
+    logger.info('connect new web component');
+
     return function <T extends { new(...args: any[]): {} }>(target: T) {
         
         let connectedCallback: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target.prototype,'connectedCallback');

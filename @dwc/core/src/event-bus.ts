@@ -9,13 +9,15 @@ type EventReceiver = {
 }
 
 interface IListener{
-    [key:string]:Array<EventReceiver>
+    [key:string]: Array<EventReceiver>
 }
 
  class EventBusClass {
-    private listeners:IListener;
+    private listeners: IListener;
     constructor(){
-        this.listeners={};
+        logger.debug('construct new event bus');
+
+        this.listeners = {};
     }
     private _registerListener(topic:string, callback:Function) {
 
@@ -35,6 +37,7 @@ interface IListener{
        * @param {function} callback - callback executed when this event is triggered
        */
       subscribe(topic: string, callback: Function): void {
+        logger.debug(`new subscriber for topic: "${topic}" with callback:`, callback);
         this._registerListener(topic, callback);
       }
 
@@ -55,23 +58,33 @@ interface IListener{
         }
       }
 
-      private getTopicReceivers(topic:string):Array<EventReceiver>{
-        return this.listeners[topic]||[];
+      private getTopicReceivers(topic: string): Array<EventReceiver> {
+        return this.listeners[topic] || [];
       }
 
       /**
        * Emit the event
        * @param {string} topic - name of the event.
        */
-      async emit(topic:string,...args:any[]) {
-        logger.debug('emit:', topic);
+      async emit(topic: string, ...args: any[]) {
         const receivers = this.getTopicReceivers(topic);
+        logger.debug(`emit event: "${topic}" to receivers:`, receivers);
+
         // Run promises
         receivers.map(
-        receiver => new Promise((resolve) =>{
-            resolve(receiver.callback.apply(this,args));
-        }));
+            receiver => new Promise((resolve) => {
+                resolve(receiver.callback.apply(this, args));
+            })
+        );
     }
   }
 
-  export const EventBus = new EventBusClass();
+  // ensure event bus is only initiated once globally
+  declare const window: any; // TODO could be solved better
+  if (window?.dwcEventBus) {
+    logger.debug('recycling existent event bus');
+  } else if (window) {
+      window.dwcEventBus = new EventBusClass();
+  }
+
+  export const EventBus = window.dwcEventBus || new EventBusClass();

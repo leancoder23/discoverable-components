@@ -1,3 +1,4 @@
+import { BusEvent } from "./@types/bus-event";
 declare module '@dwc/core' {
     interface ComponentMetadata {
         name: string;
@@ -33,7 +34,7 @@ declare module '@dwc/core' {
 
     // component manager
     export function getAllAvailableComponentInfo(): Array<any>
-    export function subscribeComponentRegistoryUpdate(eventHandler: Function): void
+    export function subscribeComponentRegistoryUpdate(eventHandler: Function): BusEvent
     export function unsubscribeComponentRegistoryUpdate(eventHandler: Function): void
     export function subscribeComponentTraceLog(eventHandler: Function): void
     export function invokeMethod(identifer: string, methodName: string, ...args: any[]): void

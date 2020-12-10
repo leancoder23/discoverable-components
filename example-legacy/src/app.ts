@@ -8,7 +8,7 @@ import{
     Renderer,
     Bind,
     Discover
-} from './lib/@dwc/decorators.js';
+} from './lib/decorators.js';
 
 @DiscoverableWebComponent({
     name:'MyApp',

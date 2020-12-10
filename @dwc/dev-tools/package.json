@@ -1,0 +1,23 @@
+{
+    "name": "@dwc/dev-tools",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/dwc-dev-tools.js",
+    "scripts": {
+      "build": "webpack",
+      "dev": "",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+      "@dwc/core": "^1.0.0"
+    },
+    "devDependencies": {
+      "ts-loader": "^8.0.11",
+      "typescript": "^3.9.7",
+      "webpack": "^5.10.0",
+      "webpack-cli": "^4.2.0"
+    }
+  }
+  

@@ -1,13 +1,28 @@
-import '../../../node_modules/reflect-metadata/Reflect.js';
-import { EventBus } from './event-bus.js';
-import TraceLog from './@types/trace-log.js';
+import Logger, { LogLevel } from './utils/logger';
+const logger = new Logger({
+    logLevel: LogLevel.DEBUG,
+    debugPrefix: 'component manager'
+});
+
+import 'reflect-metadata';
+
+import { EventBus } from './event-bus';
+
+import { BusEvent } from './@types/bus-event';
 
 interface IComponentRegistory{
     [key:string]:IComponentDescriptor;
 } 
 
-let _componentRegistory:IComponentRegistory={}
-const EVENT_COMPONENT_REGISTORY_UPDATED:string = 'cmp:reg:updated';
+let _componentRegistory:IComponentRegistory = {};
+
+// ensure component registry is only initiated once globally
+declare const window: any; // TODO could be solved better
+if (window?.dwcRegistory) {
+    _componentRegistory = window.dwcRegistory
+} else if (window) {
+    window.dwcRegistory = _componentRegistory;
+}
 
 interface IComponentDescriptor{
     /**
@@ -34,8 +49,9 @@ interface IComponentDescriptor{
     methods?:any[];
 }
 
-function notifyComponentRegisteryIsUpdated(){
-    EventBus.emit(EVENT_COMPONENT_REGISTORY_UPDATED);
+function notifyComponentRegisteryIsUpdated() {
+    logger.debug('notify about registry updated. Current component keys:', Object.keys(_componentRegistory));
+    EventBus.emit(BusEvent.CMP_TRACE_LOG);
 } 
 
 /**
@@ -44,6 +60,8 @@ function notifyComponentRegisteryIsUpdated(){
  * @param descriptor component descriptor
  */
 export function registerComponent(descriptor:IComponentDescriptor) {
+    logger.debug('register component: ', descriptor);
+
     descriptor.properties=Reflect.getMetadata(propertyMetadataKey,descriptor.classMetadata.type.prototype);
     descriptor.methods=Reflect.getMetadata(methodMetadataKey,descriptor.classMetadata.type.prototype);
 
@@ -65,7 +83,12 @@ export function deRegisterComponent(identifier:string){
      
 }
 
-let propertyMetadataKey = Symbol('properties');
+if (!window?.dwcMethodMetadataKey) {
+    window.dwcPropertyMetadataKey = Symbol('properties');
+}
+
+const propertyMetadataKey = window.dwcPropertyMetadataKey;
+
 /**
  * Register specific property at class metadata level in order to fetch that information later
  * @param target Class prototype object
@@ -87,13 +110,17 @@ let propertyMetadataKey = Symbol('properties');
     }
 }
 
-let methodMetadataKey = Symbol('methods');
+if (!window?.dwcMethodMetadataKey) {
+    window.dwcMethodMetadataKey = Symbol('methods');
+}
+
+const methodMetadataKey = window.dwcMethodMetadataKey;
 /**
  * Register specific method  at class metadata level in order to fetch that information later
  * @param target Class prototype object
  * @param key  property or method name
  */
-export function registerMethod(target:Object,methodKey:string,metadataInfo?:Object):void{
+export function registerMethod(target: Object, methodKey: string, metadataInfo?: Object): void {
     let methods: Object[] = Reflect.getMetadata(methodMetadataKey, target);
     let methodInfo:Object = {
         name:methodKey,
@@ -145,22 +172,22 @@ export function unsubscribePropertyChange(identifer:string,eventHandler:Function
 /**
  * Register event listner when a component is added to the registory
  */
-export function subscribeComponentRegistoryUpdate(eventHandler:Function){
-    EventBus.subscribe(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
-    return EVENT_COMPONENT_REGISTORY_UPDATED;
+export function subscribeComponentRegistoryUpdate(eventHandler:Function) {
+    EventBus.subscribe(BusEvent.CMP_TRACE_LOG,eventHandler);
+    return BusEvent.CMP_TRACE_LOG;
 }
 /**
  * Remove component registory update event listner
  * @param eventHandler
  */
 export function unsubscribeComponentRegistoryUpdate(eventHandler:Function){
-    EventBus.unsubscribe(EVENT_COMPONENT_REGISTORY_UPDATED,eventHandler);
+    EventBus.unsubscribe(BusEvent.CMP_REG_UPDATED, eventHandler);
 }
 
 /**
  * Returns the component registery
  */
-export function getAllAvailableComponentInfo(){
+export function getAllAvailableComponentInfo(): Array<any> {
     return Object.keys(_componentRegistory).map((identifer)=> {
        return  _componentRegistory[identifer];
     });
@@ -181,16 +208,20 @@ export function getComponentRegistory():IComponentRegistory{
  * Return all available methods
  * @param target
  */
-export function getAvailableMethods(target:Function):any{
-    return Reflect.getMetadata(methodMetadataKey,target.prototype);
+export function getAvailableMethods(target: Function): any {
+    const metadata = Reflect.getMetadata(methodMetadataKey, target.prototype);
+    //logger.debug(`get available methods for target "${target}" and received metadata "${metadata}"`);
+    return metadata;
 }
 
 /**
  * Returns all available properties
  * @param target 
  */
-export function getAvailableProperties(target:Function):any{
-    return Reflect.getMetadata(propertyMetadataKey,target.prototype);
+export function getAvailableProperties(target: Function): any {
+    const metadata = Reflect.getMetadata(propertyMetadataKey, target.prototype);
+    //logger.debug(`get available properties for target "${target}" and received metadata "${metadata}"`);
+    return metadata;
 }
 
 /**
@@ -229,11 +260,10 @@ export function invokeMethod(identifer:string,methodName:string,...args:any[]){
  * When a component exposed property is updated or method is invoked a component trace log event is fired.
  * Subscriber can subscribe to this event to get the info regarding property change or methods invoked
  */
-const EVENT_COMPONENT_TRACE_LOG:string='cmp:trace:log';
 
 export function fireComponentTraceLog(trace:any){
-    //console.log(trace); //TODO:remove
-    EventBus.emit(EVENT_COMPONENT_TRACE_LOG,trace);
+    logger.debug('fire component trace log');
+    EventBus.emit(BusEvent.CMP_TRACE_LOG,trace);
 }
 
 /**
@@ -241,13 +271,14 @@ export function fireComponentTraceLog(trace:any){
  * @param eventHandler 
  */
 export function subscribeComponentTraceLog (eventHandler:Function) {
-    EventBus.subscribe(EVENT_COMPONENT_TRACE_LOG, eventHandler);
+    logger.debug('subscribe for component trace log with function:', eventHandler);
+    EventBus.subscribe(BusEvent.CMP_TRACE_LOG, eventHandler);
 }
 /**
  * Unsubscribe component trace log
  * @param eventHandler 
  */
 export function unsubscribeComponentTraceLog (eventHandler?:Function) {
-    EventBus.unsubscribe(EVENT_COMPONENT_TRACE_LOG, eventHandler);
+    EventBus.unsubscribe(BusEvent.CMP_TRACE_LOG, eventHandler);
 }
 

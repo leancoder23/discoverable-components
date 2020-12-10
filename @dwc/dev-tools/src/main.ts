@@ -1,11 +1,8 @@
-
-import {
-    html, 
-    render, 
-    directive
-} from '../../../node_modules/lit-html/lit-html.js';
-
-import { EventBus } from './event-bus.js';
+import Logger, { LogLevel } from './utils/logger';
+const logger = new Logger({
+    logLevel: LogLevel.DEBUG,
+    debugPrefix: 'dev tools'
+});
 
 import {
     getAllAvailableComponentInfo,
@@ -15,14 +12,23 @@ import {
     invokeMethod,
     setProperty,
     getAvailableMethods,
-    getAvailableProperties
-} from './component-manager.js';
+    getAvailableProperties,
+    EventBus
+} from '@dwc/core';
 
-import TraceLog, { 
-    TraceLogType, 
+import { TraceLogType } from './@types/trace-log';
+
+import { 
+    PropertyTraceLogPayload,
     MethodTraceLogPayload,
-    PropertyTraceLogPayload
-} from './@types/trace-log.js';
+    TraceLog
+} from './@types/interfaces';
+
+import {
+    html, 
+    render, 
+    directive
+} from 'lit-html';
 
 import renderjson from './renderjson.js';
 
@@ -59,7 +65,7 @@ class DwcDevTools extends HTMLElement {
     static is = "dwc-dev-tools";
     private root:ShadowRoot;
 
-    private _visible:boolean = true;
+    private _visible:boolean = false;
     private _showDwcGuide = false;
     private _selectedDetailsPane = DetailsPane.DISCOVERY;
     private _selectedComponentId:string | undefined = undefined;
@@ -74,18 +80,7 @@ class DwcDevTools extends HTMLElement {
      * Standard Webcomponent lifecycle hook
      */
     connectedCallback () {
-        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
-        subscribeComponentTraceLog(this.handleTraceLogArrival.bind(this));
-
-        EventBus.subscribe("devtools:component-selection", (event: any) => {
-            if (this._showDwcGuide) {
-                this.selectComponent(event?.identifier);
-            }
-        });
-
-        window.addEventListener('resize', this.updateUI.bind(this));
-
-        this.updateUI();
+        this.init();
     }   
 
     /**
@@ -97,11 +92,32 @@ class DwcDevTools extends HTMLElement {
         window.removeEventListener('resize', this.updateUI.bind(this));
     }
 
+    init () {
+        logger.debug('init');
+        subscribeComponentRegistoryUpdate(this.handleComponentRegistoryUpdate.bind(this));
+        subscribeComponentTraceLog(this.handleTraceLogArrival.bind(this));
+
+        EventBus.subscribe("devtools:component-selection", this.handleComponentSelection.bind(this));
+
+        window.addEventListener('resize', this.updateUI.bind(this));
+
+        this.updateUI();
+    }
+
+    handleComponentSelection(event: any): void {
+        logger.debug('handle component selection');
+        if (this._showDwcGuide) {
+            this.selectComponent(event?.identifier);
+        }
+    }
+
     handleComponentRegistoryUpdate():void {
+        logger.debug('handle registory update');
         this.updateUI();
     }
 
     handleTraceLogArrival(traceLog: TraceLog):void {
+        logger.debug('handle trace log arrival');
         this._traceLogs.push(traceLog);
 
         this.updateUI();
@@ -137,13 +153,13 @@ class DwcDevTools extends HTMLElement {
     }
 
     updatePropertyValue(comp: IDiscoveredComponent, propertyName: string, value: string):void {
-        console.log(`[dev tools] update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
+        logger.debug(`update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
 
         setProperty(comp.id, propertyName, value);
     }
 
     executeFunction(comp: IDiscoveredComponent, methodName: string):void {
-        console.log(`[dev tools] execute method "${methodName}" on component "${comp.name}"`);
+        logger.debug(`execute method "${methodName}" on component "${comp.name}"`);
 
         invokeMethod(comp.id, methodName);
     }
@@ -360,10 +376,10 @@ class DwcDevTools extends HTMLElement {
     }
 
     private getRenderedTraceLogs () {
-        const renderedHistoryItems = this._traceLogs.slice().reverse().filter(item => item.targetId === this._selectedComponentId).map((traceLog: TraceLog) => {
+        const renderedHistoryItems = this._traceLogs.slice().reverse().filter(item => item?.targetId === this._selectedComponentId).map((traceLog: TraceLog) => {
             const renderedTraceLog = function() {
                 const by = function() {
-                    if (traceLog.sourceId) {
+                    if (traceLog?.sourceId) {
                         return html`
                             <a href="#">${traceLog.sourceId}</a>
                         `;
@@ -726,7 +742,7 @@ class DwcDevTools extends HTMLElement {
     }
 
     updateUI() {
-        console.log('[dev tools] update UI');
+        logger.debug('update UI');
 
         const componentList:Array<IDiscoveredComponent> = this.getDiscoveredComponents();
 
@@ -746,7 +762,6 @@ class DwcDevTools extends HTMLElement {
 
         const foundComponent = componentList.find(comp => comp.id === this._selectedComponentId);
         const renderedPropsList = foundComponent?.props?.map((prop) => {
-            console.log(prop);
             return html`
                 <li>
                     <label>${prop.name}<span style="display: ${prop.type === Object || prop.type === Array ? 'none' : 'initial'}">:</span></label>
@@ -802,6 +817,5 @@ class DwcDevTools extends HTMLElement {
     }
 
 }
-
 
 customElements.define(DwcDevTools.is, DwcDevTools);

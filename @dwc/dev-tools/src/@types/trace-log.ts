@@ -1,0 +1,4 @@
+export enum TraceLogType {
+    METHOD_CALL = 'METHOD_CALL',
+    PROPERTY_CHANGE = 'PROPERTY_CHANGE'
+}

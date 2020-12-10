@@ -1,8 +1,3 @@
-enum TraceLogType {
-    METHOD_CALL = 'METHOD_CALL',
-    PROPERTY_CHANGE = 'PROPERTY_CHANGE'
-}
-
 interface PropertyTraceLogPayload {
     property: string,
     value: any
@@ -21,10 +16,3 @@ interface TraceLog {
     targetId: string,
     payload: PropertyTraceLogPayload | MethodTraceLogPayload
 }
-
-export default TraceLog;
-
-export { TraceLogType, 
-    PropertyTraceLogPayload, 
-    MethodTraceLogPayload 
-};

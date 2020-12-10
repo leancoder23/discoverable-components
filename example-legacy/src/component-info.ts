@@ -10,7 +10,7 @@ import {getAllAvailableComponentInfo,
     unsubscribeComponentTraceLog,
     setProperty
     
- } from './lib/@dwc/component-manager.js';
+ } from './lib/component-manager.js';
 
 
 class ComponentInfo extends HTMLElement {

@@ -6,7 +6,7 @@ import{
     Renderer,
     Bind,
     Api
-} from './lib/@dwc/decorators.js';
+} from './lib/decorators.js';
 
 
 import './component-info.js';

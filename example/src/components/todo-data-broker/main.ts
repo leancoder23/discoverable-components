@@ -1,12 +1,6 @@
-import { 
-    Discover, 
-    Renderer
-} from '../lib/@dwc/decorators.js';
+import { Discover, Renderer } from '@dwc/core';
 
-import {
-    Todo,
-    TodoStatus
-} from '../example/@types/todo.js';
+import { TodoStatus } from '../../@types/todo';
 
 @Discover.Component({
     name: 'TodoDataBroker',
@@ -15,16 +9,16 @@ import {
 class TodoDataBroker extends HTMLElement {
     static is = "todo-data-broker";
 
-    private _todoList:Todo[] = [];
+    private _todoList: Todo[] = [];
 
     @Discover.Field({
         description:'List of todo items'
     })
-    get todoList():Todo[] {
+    get todoList(): Todo[] {
         return this._todoList;
     }
 
-    set todoList(todoList:Todo[]) {
+    set todoList(todoList: Todo[]) {
         this._todoList = todoList;
     }
 

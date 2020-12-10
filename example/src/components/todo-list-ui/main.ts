@@ -1,20 +1,11 @@
-import { html, render } from '../../node_modules/lit-html/lit-html.js';
+import { html, render } from 'lit-html';
 
 import { 
     Discover,
     Renderer,
-    Bind
-} from '../lib/@dwc/decorators.js';
-
-import {
-    subscribePropertyChange,
+    Bind,
     subscribeComponentTraceLog
-} from '../lib/@dwc/component-manager.js';
-
-import {
-    Todo,
-    TodoStatus
-} from '../example/@types/todo.js';
+} from '@dwc/core';
 
 @Discover.Component({
     name: 'Todo List UI',

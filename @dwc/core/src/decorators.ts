@@ -1,6 +1,14 @@
-import * as  ComponentManager from './component-manager.js';
-import TraceLog, { TraceLogType } from './@types/trace-log.js';
-import { EventBus } from './event-bus.js';
+import Logger, { LogLevel } from './utils/logger';
+const logger = new Logger({
+    logLevel: LogLevel.DEBUG,
+    debugPrefix: 'decorators'
+});
+
+import 'reflect-metadata';
+import * as  ComponentManager from './component-manager';
+import { EventBus } from './event-bus';
+
+import { TraceLogType } from './@types/trace-log';
 
 /**
  * hidden property for component unique id
@@ -41,6 +49,8 @@ interface IdwcClassMetadata{
  * @param dwcClassMetadata  
  */
 export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
+    logger.info('connect new web component');
+
     return function <T extends { new(...args: any[]): {} }>(target: T) {
         
         let connectedCallback: PropertyDescriptor|undefined  = Reflect.getOwnPropertyDescriptor(target.prototype,'connectedCallback');
@@ -235,7 +245,9 @@ export function DiscoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
 function callRenderer(target:any,context:any){
    
     let renderMethodName = Reflect.getMetadata(renderMetadataKey,target.prototype);
-    console.log(renderMethodName);
+
+    logger.debug(renderMethodName);
+
     if(renderMethodName){
         let renderer =  <Function>Reflect.get(target.prototype,renderMethodName);
         renderer.apply(context);

@@ -1,0 +1,25 @@
+{
+  "name": "@dwc/core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/dwc-core.js",
+  "types": "dist/global.d.ts",
+  "scripts": {
+    "build": "webpack",
+    "dev": "",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "baconjs": "^3.0.13",
+    "reflect-metadata": "^0.1.13"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^6.4.0",
+    "ts-loader": "^8.0.11",
+    "typescript": "^3.9.7",
+    "webpack": "^5.10.0",
+    "webpack-cli": "^4.2.0"
+  }
+}

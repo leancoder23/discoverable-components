@@ -24,13 +24,21 @@ The project is being organised as [yarn workspace](https://classic.yarnpkg.com/e
 
 Please execute ```yarn``` on root level to install all dependencies.
 
-# Build
+# Quick Start
+1) Build _core_ module:
+````
+$ cd @dwc/core
+$ yarn build
+````
 
-## Core
-In order to build _core_ please navigate to this module and execute ```yarn build```. This generated the _dist_ folder (if not existent, yet), which holds the library artifacts after a successful build.
+2) Build _dev tools_ module:
+````
+$ cd @dwc/dev-tools
+$ yarn build
+````
 
-## Dev Tools
-In order to build _dev tools_ please navigate to this module and execute ```yarn build```. This generated the _dist_ folder (if not existent, yet), which holds the library artifacts after a successful build.
-
-
-## Example
+3) Start _example_ with hot reloading development server
+````
+$ cd example
+$ yarn dev
+````

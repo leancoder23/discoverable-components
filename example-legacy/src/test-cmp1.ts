@@ -1,21 +1,15 @@
-import { html, render } from '../node_modules/lit-html/lit-html.js';
+import { html, render } from 'lit-html';
 import{ 
     Discover,
-    DiscoverableWebComponent, 
-    IDiscoverableWebComponent,
     Renderer,
-    Bind,
-    Api
-} from './lib/decorators.js';
-
-
-import './component-info.js';
+    Bind
+} from '@dwc/core';
 
 @Discover.Component({
     name:'TestCMP',
     description:'Another component'
 })
-class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
+class TestCmp extends HTMLElement {
     static is = "test-cmp";
     
     private root:ShadowRoot;
@@ -112,9 +106,6 @@ class TestCmp extends HTMLElement implements IDiscoverableWebComponent {
                     }
                 </style>
                 <div class="container">
-                    <div class="info">
-                        <cmp-info></cmp-info>
-                    </div>
                     <div class="action">
                       <i> just a dummy component from other module</i> <br/>
                       <b>MyApp counter value (design time binding): ${this.myAppCounter}</b><br/>

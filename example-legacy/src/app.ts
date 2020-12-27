@@ -1,20 +1,17 @@
 //import {html, render} from 'https://unpkg.com/lit-html?module';
-import {html, render} from '../node_modules/lit-html/lit-html.js';
+import {html, render} from 'lit-html';
 
-import{ 
-    DiscoverableWebComponent, 
-    IDiscoverableWebComponent,
-    Api,
+import{  
     Renderer,
     Bind,
     Discover
-} from './lib/decorators.js';
+} from '@dwc/core';
 
-@DiscoverableWebComponent({
+@Discover.Component({
     name:'MyApp',
     description:'Test Decorator' 
 })
-export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
+export class MyApp extends HTMLElement {
 
     static is = "my-app";
     static get observedAttributes() {
@@ -45,12 +42,12 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
     })
   
 
-    @Api()
+    @Discover.Field()
     get uniqueId():string{
         return this._id;
     }
    
-    @Api({
+    @Discover.Field({
         description:'Counter value'
     }) 
     get counter():number{
@@ -64,6 +61,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
        
     }
 
+    
     connectedCallback(){    
         console.log('[app] my app component is loaded in the dom');
 
@@ -92,7 +90,7 @@ export class MyApp extends HTMLElement implements IDiscoverableWebComponent {
       node?.remove();
        // this.setState({ counter: this.state.counter + 1 });
     }
-    @Api({
+    @Discover.Method({
         description:'Method called on input change'
     }) 
     onInputChange(event:any){  

@@ -1,6 +1,6 @@
-import './dist/app.js';
-import './dist/test-cmp1.js';
-import './dist/lib/@dwc/dev-tools.js';
+import './app.ts';
+import './test-cmp1.ts';
+import '@dwc/dev-tools';
 
 const main = document.querySelector('main');
 

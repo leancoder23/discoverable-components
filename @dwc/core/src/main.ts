@@ -2,7 +2,8 @@ import {
     Discover, 
     Renderer, 
     Bind, 
-    Store 
+    OnConnected,
+    OnDisconnected 
 } from './decorators';
 
 import { 
@@ -23,7 +24,8 @@ export {
     Discover,
     Renderer,
     Bind, 
-    Store,
+    OnConnected,
+    OnDisconnected,
 
     // component manager
     getAllAvailableComponentInfo,

@@ -27,7 +27,9 @@ declare module '@dwc/core' {
 
     export function Renderer(target: any, key: string, descriptor: PropertyDescriptor): void
 
-    export function Store(target: any, propertyKey: string)
+    export function OnConnected(target: any, key: string, descriptor: PropertyDescriptor):void
+    
+    export function OnDisconnected(target: any, key: string, descriptor: PropertyDescriptor):void
 
     export function Bind(binderInfo: IExternalComponentPropertyBinder): Function
 

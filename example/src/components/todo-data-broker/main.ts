@@ -1,4 +1,8 @@
-import { Discover, Renderer } from '@dwc/core';
+import { Discover, 
+    Renderer,
+    OnConnected,
+    OnDisconnected,
+} from '@dwc/core';
 
 import { TodoStatus } from '../../@types/todo';
 
@@ -95,11 +99,13 @@ class TodoDataBroker extends HTMLElement {
 
     }
 
+    @OnConnected
     connectedCallback () {
         // do inital fetch on load
         this.fetchTodos()
     }
 
+    @OnDisconnected
     disconnectedCallback () {
 
     }

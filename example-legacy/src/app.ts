@@ -4,7 +4,9 @@ import {html, render} from 'lit-html';
 import{  
     Renderer,
     Bind,
-    Discover
+    Discover,
+    OnConnected,
+    OnDisconnected
 } from '@dwc/core';
 
 @Discover.Component({
@@ -61,7 +63,7 @@ export class MyApp extends HTMLElement {
        
     }
 
-    
+    @OnConnected
     connectedCallback(){    
         console.log('[app] my app component is loaded in the dom');
 
@@ -69,6 +71,7 @@ export class MyApp extends HTMLElement {
         this.updateUI();
     }
 
+    @OnDisconnected
     disconnectedCallback() {
         //Perform cleanup here
     } 

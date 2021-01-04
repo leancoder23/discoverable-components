@@ -17,7 +17,12 @@ module.exports = {
         contentBase: path.join(__dirname, 'dist'),
         historyApiFallback: true,
         hot: true,
-        port: 8080
+        port: 8080,
+        headers: {
+            "Access-Control-Allow-Origin": "webpack://example-legacy",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
+          }
     },
     module: {
         rules: [

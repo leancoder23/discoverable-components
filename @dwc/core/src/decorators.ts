@@ -1,5 +1,5 @@
 import Logger, { LogLevel } from './utils/logger';
-import {debounce} from './utils/common';
+import { debounce } from './utils/common';
 const logger = new Logger({
     logLevel: LogLevel.DEBUG,
     debugPrefix: 'decorators'
@@ -10,6 +10,8 @@ import * as  ComponentManager from './component-manager';
 import { EventBus } from './event-bus';
 
 import { TraceLogType } from './@types/trace-log';
+
+import StackTrace from 'stacktrace-js'
 
 /**
  * hidden property for component unique id
@@ -25,92 +27,34 @@ const onConnectedMethodMetadataKey = Symbol("onConnectedMethodMetadataKey");
 const onDisconnectedMethodMetadataKey = Symbol("onDisconnectedMethodMetadataKey");
 const componentMetadataKey = Symbol("componentMetadata");
 
-interface ISubscriptions{
-    [key:string]:Function;
+interface ISubscriptions {
+    [key: string]: Function;
 }
 
-interface IdwcClassMetadata{
-    name:string;
-    description?:string;
-     /**
-     *When set true then component will not be registered in component registory and will not notify and be available to other component when it is connected
-     *Typical use case for this component is developer tool component
-     * @type {Boolean}
-     * @memberof IdwcClassMetadata
-     */
+interface IdwcClassMetadata {
+    name: string;
+    description?: string;
+    /**
+    *When set true then component will not be registered in component registory and will not notify and be available to other component when it is connected
+    *Typical use case for this component is developer tool component
+    * @type {Boolean}
+    * @memberof IdwcClassMetadata
+    */
     isNonDiscoverable?: Boolean;
-} 
+    /**
+     * When this flag is set to true then only once instance of this component will be created in the system
+     */
+    allowOnlySingleInstance?:Boolean;
+}
 /**
  * Extend  a component and makes it discoverable to other component
  * @param dwcClassMetadata  
  */
-export function discoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
+export function discoverableWebComponent(dwcClassMetadata: IdwcClassMetadata) {
     return function <T extends { new(...args: any[]): {} }>(target: T) {
 
-        /*
-        let connectedCallback: PropertyDescriptor | undefined = Reflect.getOwnPropertyDescriptor(target.prototype, 'connectedCallback');
-        let disconnectedCallback: PropertyDescriptor | undefined = Reflect.getOwnPropertyDescriptor(target.prototype, 'disconnectedCallback');
-
-        if (!connectedCallback || !disconnectedCallback) {
-            throw new Error('Component cannot be made discoverable, as required methods are not implemented');
-        }
-
-        // makes dev tools react to component selection
-        function handleComponentClick(identifier: string) {
-            EventBus.emit("devtools:component-selection", { identifier: identifier });
-        }
-
-        target.prototype.connectedCallback = function () {
-            
-
-            this.setAttribute('dwc-id', this[uniqueIdSymbol]);
-            connectedCallback?.value.apply(this);
-            ComponentManager.registerComponent({
-                identifier: this[uniqueIdSymbol],
-                instance: this,
-                classMetadata: { type: target, ...dwcClassMetadata }
-            });
-
-            // makes dev tools react to component selection
-            this.addEventListener('click', () => handleComponentClick(this[uniqueIdSymbol]));
-
-            //populate binded property
-            populatedBindedProperty(this);
-
-            //if a class has external binder then subscribe the component registory change and run the property
-
-            const componentRegistoryChangeEventHandler = () => {
-                populatedBindedProperty(this);
-            }
-
-            if (Reflect.getMetadata(binderInfoMetaKey, target.prototype)) {
-                let topic = ComponentManager.subscribeComponentRegistoryUpdate(componentRegistoryChangeEventHandler);
-                //add to subscription list so that it can be cleaned up later
-                this[subscriptionSymbol][topic] = componentRegistoryChangeEventHandler;
-            }
-        } */
-
-        /*
-        target.prototype.disconnectedCallback = function () {
-            ComponentManager.deRegisterComponent(this[uniqueIdSymbol]);
-
-            this.removeEventListener('click', handleComponentClick);
-
-            //Remove all the subscriptions for this component
-            let subscriptions = (<ISubscriptions>this[subscriptionSymbol]);
-            Object.keys(subscriptions).forEach(topic => {
-                //Assumption: All subscriptions are handled via event-bus
-                EventBus.unsubscribe(topic, subscriptions[topic]);
-            })
-
-
-
-            disconnectedCallback?.value.apply(this);
-        } */
-
-
         //TODO: handle property change event specific to property not on entire component instance level
-        target.prototype.setBindedProperty=function(this: any, sourceInstance: any, binderInfo: IBinderMetadata): Boolean {
+        target.prototype.setBindedProperty = function (this: any, sourceInstance: any, binderInfo: IBinderMetadata): Boolean {
             let context = this;
             if (!sourceInstance) {
                 if (context[binderInfo.targetPropertyName]) {
@@ -140,10 +84,10 @@ export function discoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
             return false;
         }
 
-        target.prototype.populatePropertyBinding = function(this:any){
+        target.prototype.populatePropertyBinding = function (this: any) {
 
             let context = this;
-           
+
             //Check if there is any property to bind first 
             let propertyExternalBinders: Array<IBinderMetadata> = Reflect.getMetadata(binderInfoMetaKey, context);
 
@@ -197,6 +141,11 @@ export function discoverableWebComponent(dwcClassMetadata:IdwcClassMetadata) {
         return class extends target {
             [subscriptionSymbol]: ISubscriptions;
             constructor(...args: any[]) {
+                if(dwcClassMetadata.allowOnlySingleInstance 
+                    && ComponentManager.checkIfComponentIntanceExists(dwcClassMetadata.name)){
+                    logger.error(`Trying to create duplicate instance of the singleton component named ${dwcClassMetadata.name}`);
+                    throw new Error(`Only single instance of ${dwcClassMetadata.name} is allowed`)
+                }
                 super(args);
                 //Add unique identifier for the discoverable component to keep track in component registory
                 this[uniqueIdSymbol] = Math.random().toString(36).substr(2, 9);
@@ -273,7 +222,7 @@ export function OnConnected(target: any, key: string, descriptor: PropertyDescri
 
         //if a class has external binder then subscribe the component registory change and run the propertys
         const componentRegistoryChangeEventHandler = () => {
-           
+
             this.populatePropertyBinding();
         }
         if (Reflect.getMetadata(binderInfoMetaKey, target)) {
@@ -331,8 +280,8 @@ export function OnDisconnected(target: any, key: string, descriptor: PropertyDes
 }
 
 
-interface IdwcApiMetadata{
-    description:string
+interface IdwcApiMetadata {
+    description: string
 }
 
 /**
@@ -348,21 +297,28 @@ function discoverableMethod(dwcApiMetadata: IdwcApiMetadata) {
         let originalMethod = descriptor.value;
         descriptor.value = function (this: any, ...args: any[]) {
             let result = originalMethod.apply(this, args);
-            // now fire a method to log the calls
-            let s = {
-                date: new Date(),
-                type: TraceLogType.METHOD_CALL,
-                targetId: this[uniqueIdSymbol],
-                payload: {
-                    methodName: key,
-                    args: args,
-                    result: result,
-                    errorStack: new Error().stack
-                }
-            };
-            console.log(s);
-            ComponentManager.fireComponentTraceLog(s);
 
+            if (ComponentManager.isTracelogSubscriberAvailable()) {
+
+                StackTrace.get().then((stackFrames) => {
+                    // now fire a method to log the calls
+                    let s = {
+                        date: new Date(),
+                        type: TraceLogType.METHOD_CALL,
+                        targetId: this[uniqueIdSymbol],
+                        payload: {
+                            methodName: key,
+                            args: args,
+                            result: result,
+                            stackFrames: stackFrames.map(sf=>sf.toString())
+                        }
+                    };
+                    logger.debug(s);
+                    ComponentManager.fireComponentTraceLog(s);
+                });
+
+
+            }
 
             return result;
         }
@@ -460,27 +416,27 @@ export const Discover = {
  * @param {string} key
  * @param {PropertyDescriptor} descriptor
  */
-export function Renderer(target:any,key:string,descriptor:PropertyDescriptor){
-   
-    let rendererMetadata:Object =  Reflect.getMetadata(renderMetadataKey, target);
-    if(rendererMetadata){
+export function Renderer(target: any, key: string, descriptor: PropertyDescriptor) {
+
+    let rendererMetadata: Object = Reflect.getMetadata(renderMetadataKey, target);
+    if (rendererMetadata) {
         throw new Error(`Duplicate Renderer ${target.constructor.name}`);
     }
     //Just log render method name
     Reflect.defineMetadata(renderMetadataKey, key, target);
 }
 
-interface IExternalComponentPropertyBinder{
-    sourceComponentName:string;
-    sourceComponentPropertyName:string;
-    instanceIdentifier?:string; //Optional TODO: should be used later 
+interface IExternalComponentPropertyBinder {
+    sourceComponentName: string;
+    sourceComponentPropertyName: string;
+    instanceIdentifier?: string; //Optional TODO: should be used later 
 }
 
-interface IBinderMetadata extends IExternalComponentPropertyBinder{
-    targetPropertyName:string;
+interface IBinderMetadata extends IExternalComponentPropertyBinder {
+    targetPropertyName: string;
 }
 
-const binderInfoMetaKey=Symbol("binderInfo");
+const binderInfoMetaKey = Symbol("binderInfo");
 /**
  * Bind property of a component to external component, property will be updated when component is discovered and related property changes at source  
  * Use this decorator to bind component property on design time, this will bind the first instance of the source component property
@@ -488,20 +444,20 @@ const binderInfoMetaKey=Symbol("binderInfo");
  * @param {IExternalComponentPropertyBinder} binderInfo
  * @returns
  */
-export function Bind(binderInfo:IExternalComponentPropertyBinder){
-    return function(target:any,key:string):void{
+export function Bind(binderInfo: IExternalComponentPropertyBinder) {
+    return function (target: any, key: string): void {
         //now keep this information which property is binded to other component 
         //so that when that component property changes then this component should be updated
         let externalPropertyBinders: IBinderMetadata[] = Reflect.getMetadata(binderInfoMetaKey, target);
-        let binderDetail:IBinderMetadata = {
-            targetPropertyName:key,
+        let binderDetail: IBinderMetadata = {
+            targetPropertyName: key,
             ...binderInfo
         };
         if (externalPropertyBinders) {
             externalPropertyBinders.push(binderDetail);
         } else {
             externalPropertyBinders = [binderDetail];
-          Reflect.defineMetadata(binderInfoMetaKey, externalPropertyBinders, target);
+            Reflect.defineMetadata(binderInfoMetaKey, externalPropertyBinders, target);
         }
     }
 }

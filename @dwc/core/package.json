@@ -13,7 +13,8 @@
   "license": "ISC",
   "dependencies": {
     "baconjs": "^3.0.13",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "stacktrace-js": "^2.0.2"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^6.4.0",

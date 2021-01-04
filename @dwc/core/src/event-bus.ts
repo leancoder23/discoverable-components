@@ -58,9 +58,12 @@ interface IListener{
         }
       }
 
-      private getTopicReceivers(topic: string): Array<EventReceiver> {
+      getTopicReceivers(topic: string): Array<EventReceiver> {
         return this.listeners[topic] || [];
       }
+
+      
+
 
       /**
        * Emit the event

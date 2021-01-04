@@ -10,6 +10,7 @@ import { EventBus } from './event-bus';
 
 import { BusEvent } from './@types/bus-event';
 
+
 interface IComponentRegistory{
     [key:string]:IComponentDescriptor;
 } 
@@ -96,7 +97,7 @@ const propertyMetadataKey = window.dwcPropertyMetadataKey;
  */
  export function registerProperty(target:Object,propertyKey:string,metadataInfo?:Object):void{
     let properties: Object[] = Reflect.getMetadata(propertyMetadataKey, target);
-    let propInfo:Object = {
+    let propInfo:any = {
         name:propertyKey,
         type:Reflect.getMetadata("design:type",target,propertyKey),
        ...metadataInfo
@@ -122,7 +123,7 @@ const methodMetadataKey = window.dwcMethodMetadataKey;
  */
 export function registerMethod(target: Object, methodKey: string, metadataInfo?: Object): void {
     let methods: Object[] = Reflect.getMetadata(methodMetadataKey, target);
-    let methodInfo:Object = {
+    let methodInfo:any = {
         name:methodKey,
         ...metadataInfo
     };
@@ -246,15 +247,37 @@ export function setProperty(identifer:string,propertyKey:string,value:any){
  * @param methodName property to be set
  * @param args property value
  */
+export function invokeMethodByComponentName(componentName:string,methodName:string,...args:any[]){
+
+     let componentIdentifier = Object.keys(_componentRegistory).find((key)=> _componentRegistory[key].classMetadata.name===componentName);
+     if(componentIdentifier){
+        invokeMethod(componentIdentifier,methodName,args);
+     }else{
+         logger.debug(`Component ${componentName} is not found in the registory, this component may not be loaded in the DOM`);
+     }
+}
+
+/**
+ * Invoke a method
+ * @param identifer Component unique identifier
+ * @param methodName property to be set
+ * @param args property value
+ */
 export function invokeMethod(identifer:string,methodName:string,...args:any[]){
     if(Reflect.has(_componentRegistory,identifer)){
         let cmpInfo = _componentRegistory[identifer];
         if(Reflect.has(cmpInfo.classMetadata.type.prototype,methodName)){
            // console.log(`invokeMethod called for ${methodName}  of ${identifer} and caller is ${Function.caller}`);
             cmpInfo.instance[methodName].apply(cmpInfo.instance,args);
+        }else{
+            logger.debug(`${methodName} method is not exposed as api method on the ${cmpInfo.classMetadata.name} component. Please make sure the method is annoted with Discover.method decorator`);
         }
+    }else{
+        logger.debug(`Component with identifier ${identifer} is not found in the registory, this component may not be loaded in the DOM`);
     }
 }
+
+
 
 /**
  * When a component exposed property is updated or method is invoked a component trace log event is fired.
@@ -280,5 +303,25 @@ export function subscribeComponentTraceLog (eventHandler:Function) {
  */
 export function unsubscribeComponentTraceLog (eventHandler?:Function) {
     EventBus.unsubscribe(BusEvent.CMP_TRACE_LOG, eventHandler);
+}
+
+/**
+ * Return true if there is subscriber available. This information is used to generate tracelog information
+ */
+export function isTracelogSubscriberAvailable():Boolean{
+    let tracelogSubscribers = EventBus.getTopicReceivers(BusEvent.CMP_TRACE_LOG);
+    return  Array.isArray(tracelogSubscribers) && tracelogSubscribers.length>0;
+}
+
+/**
+ * Return true if component instance exists in the system
+ *
+ * @export
+ * @param {string} name
+ * @returns {Boolean}
+ */
+export function checkIfComponentIntanceExists(name:string):Boolean{
+    return Object.keys(_componentRegistory).findIndex((key)=> _componentRegistory[key].classMetadata.name===name)>-1;
+    
 }
 

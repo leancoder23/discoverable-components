@@ -4,6 +4,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 module.exports = {
     mode: 'production',
     entry: './src/main.ts',
+    devtool: 'source-map',
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'dwc-core.js',

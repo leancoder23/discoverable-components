@@ -11,7 +11,8 @@ import{
 
 @Discover.Component({
     name:'MyApp',
-    description:'Test Decorator' 
+    description:'Test Decorator',
+    allowOnlySingleInstance:true
 })
 export class MyApp extends HTMLElement {
 

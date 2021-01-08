@@ -39,8 +39,10 @@ declare module '@dwc/core' {
     export function subscribeComponentRegistoryUpdate(eventHandler: Function): BusEvent
     export function unsubscribeComponentRegistoryUpdate(eventHandler: Function): void
     export function subscribeComponentTraceLog(eventHandler: Function): void
-    export function invokeMethod(identifer: string, methodName: string, ...args: any[]): void
-    export function setProperty(identifer: string, propertyKey: string, value:any): void
+    export function invokeMethod(source:any,identifer: string, methodName: string, ...args: any[]): void
+    export function invokeMethodByComponentName(source:any,componentName: string, methodName: string, ...args: any[]): void
+    export function setProperty(source:any,identifer: string, propertyKey: string, value:any): void
+    export function setPropertyByComponentName(source:any, componentName: string, propertyKey: string, value:any): void
     export function getAvailableMethods(target: Function): any
     export function getAvailableProperties(target: Function): any
 

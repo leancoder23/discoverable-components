@@ -263,29 +263,6 @@ function discoverableMethod(dwcApiMetadata: IdwcApiMetadata) {
         let originalMethod = descriptor.value;
         descriptor.value = function (this: any, ...args: any[]) {
             let result = originalMethod.apply(this, args);
-
-            if (ComponentManager.isTracelogSubscriberAvailable()) {
-
-                StackTrace.get().then((stackFrames) => {
-                    // now fire a method to log the calls
-                    let s = {
-                        date: new Date(),
-                        type: TraceLogType.METHOD_CALL,
-                        targetId: this[uniqueIdSymbol],
-                        payload: {
-                            methodName: key,
-                            args: args,
-                            result: result,
-                            stackFrames: stackFrames.map(sf=>sf.toString())
-                        }
-                    };
-                    logger.debug(s);
-                    ComponentManager.fireComponentTraceLog(s);
-                });
-
-
-            }
-
             return result;
         }
         ComponentManager.registerMethod(target, key, dwcApiMetadata);
@@ -314,21 +291,6 @@ function discoverableProperty(dwcApiMetadata?: IdwcApiMetadata) {
             const setter = function (this: any, val: any) {
                 if (this[propPrivateKey] != val) {
                     this[propPrivateKey] = val;
-
-                    // now fire a method to log the calls
-                    ComponentManager.fireComponentTraceLog({
-                        date: new Date(),
-                        type: TraceLogType.PROPERTY_CHANGE,
-                        targetId: this[uniqueIdSymbol],
-                        payload: {
-                            property: key,
-                            value: val
-                        }
-                    });
-
-                    //Call the change event on the object
-                    ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol]);
-
                 }
             };
 
@@ -342,19 +304,6 @@ function discoverableProperty(dwcApiMetadata?: IdwcApiMetadata) {
                 let originalSetter = descriptor.set;
                 descriptor.set = function (this: any, val) {
                     originalSetter.call(this, val);
-                    // now fire a method to log the calls
-                    ComponentManager.fireComponentTraceLog({
-                        date: new Date(),
-                        type: TraceLogType.PROPERTY_CHANGE,
-                        targetId: this[uniqueIdSymbol],
-                        payload: {
-                            property: key,
-                            value: val
-                        },
-
-                    });
-
-                    ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol]);
                 }
                 Object.defineProperty(target, key, descriptor);
             }

@@ -2,9 +2,7 @@ import { html, render } from 'lit-html';
 import{ 
     Discover,
     Renderer,
-    Bind,
-    OnConnected,
-    OnDisconnected
+    Bind
 } from '@dwc/core';
 
 @Discover.Component({
@@ -50,18 +48,13 @@ class TestCmp extends HTMLElement {
     })
     _todoList:any[]|undefined;
    
-    @OnConnected
+
     connectedCallback(){
         this.setAttribute('id',this.uniqueId);
         this.updateUI();
 
        
 
-    }
-
-    @OnDisconnected
-    disconnectedCallback() {
-    //Perform cleanup here
     }
 
     attributeChangedCallback(name:string, oldValue:any, newValue:any){

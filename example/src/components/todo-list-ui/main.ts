@@ -4,9 +4,7 @@ import {
     Discover,
     Renderer,
     Bind,
-    subscribeComponentTraceLog,
-    OnConnected,
-    OnDisconnected,
+    subscribeComponentTraceLog
 } from '@dwc/core';
 
 @Discover.Component({
@@ -35,18 +33,11 @@ class TodoListUI extends HTMLElement {
         this.listTitle  = 'My Todo List';
         this._todoList = [];
     }
-
-    @OnConnected
     connectedCallback () {
         //subscribePropertyChange(this._id, this.handlePropertyUpdate.bind(this));
         subscribeComponentTraceLog(this.handlePropertyUpdate.bind(this));
 
         this.updateUI();
-    }
-
-    @OnDisconnected
-    disconnectedCallback () {
-
     }
 
     handlePropertyUpdate():void {

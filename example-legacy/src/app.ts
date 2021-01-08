@@ -4,8 +4,11 @@ import {html, render} from 'lit-html';
 import{  
     Renderer,
     Bind,
-    Discover
+    Discover,
+    invokeMethodByComponentName
 } from '@dwc/core';
+
+
 
 @Discover.Component({
     name:'MyApp',
@@ -121,6 +124,8 @@ export class MyApp extends HTMLElement {
                         <strong>Counter:</strong>${this.counter}
                         <button @click=${(event:any)=>this.onClick(event)}>Counter</button>
                         <button @click=${(event:any)=>this.onClose(event)}>close</button>
+
+                        <button @click=${(event:any)=>invokeMethodByComponentName(this,'TestCMP','performMagicStuff')}>invoke performMagicStuff at test component</button>
                     </div>
                 </div>`,this.root);
     }

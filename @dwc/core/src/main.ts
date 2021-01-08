@@ -23,9 +23,7 @@ export {
     // decorators
     Discover,
     Renderer,
-    Bind, 
-    OnConnected,
-    OnDisconnected,
+    Bind,
 
     // component manager
     getAllAvailableComponentInfo,

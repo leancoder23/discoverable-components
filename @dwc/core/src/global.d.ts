@@ -3,17 +3,6 @@ declare module '@dwc/core' {
     interface ComponentMetadata {
         name: string;
         description?: string;
-        /**
-        *When set true then component will not be registered in component registory and will not notify and be available to other component when it is connected
-        *Typical use case for this component is developer tool component
-        * @type {Boolean}
-        * @memberof IdwcClassMetadata
-        */
-        isNonDiscoverable?: Boolean;
-        /**
-         * When this flag is set to true then only once instance of this component will be created in the system
-         */
-        allowOnlySingleInstance?:Boolean;
     }
 
     interface PropertyMetadata {

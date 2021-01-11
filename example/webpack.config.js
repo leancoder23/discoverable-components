@@ -1,12 +1,14 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 module.exports = {
-    mode: 'production',
+    mode: 'development',
     entry: {
         'dwc-dev-tools': './src/inject-dev-tools.ts',
         'todo-data-broker': './src/components/todo-data-broker/main.ts',
         'todo-list-ui': './src/components/todo-list-ui/main.ts',
+        'todo-list-ui-vue': './src/components/todo-list-ui-vue/main.ts',
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -29,10 +31,15 @@ module.exports = {
                 options: {
                     configFile: 'tsconfig.example.json'
 	            }
+            },
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader'
             }
         ]
     },
     plugins: [
+        new VueLoaderPlugin(),
         new HtmlWebpackPlugin({
             alwaysWriteToDisk: true,
             filename: 'index.html',

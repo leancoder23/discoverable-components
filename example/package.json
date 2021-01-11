@@ -12,10 +12,13 @@
   "license": "ISC",
   "dependencies": {
     "@dwc/core": "^1.0.0",
-    "@dwc/dev-tools": "^1.0.0",
-    "lit-html": "^1.2.1"
+    "lit-html": "^1.2.1",
+    "vue": "^2.6.12",
+    "vue-loader": "^15.9.5",
+    "vue-template-compiler": "^2.6.12"
   },
   "devDependencies": {
+    "@dwc/dev-tools": "^1.0.0",
     "html-webpack-plugin": "^4.5.0",
     "ts-loader": "^8.0.11",
     "typescript": "^3.9.7",

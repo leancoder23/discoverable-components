@@ -1,4 +1,4 @@
-import { html, render } from 'lit-html';
+import Vue from 'vue';
 
 import { 
     Discover,
@@ -7,20 +7,23 @@ import {
     subscribeComponentTraceLog
 } from '@dwc/core';
 
+import VueComponent from './app.vue';
+
 @Discover.Component({
-    name: 'Todo List UI',
+    name: 'Vue Todo List UI',
     description: 'Displays available todo items'
 })
 class TodoListUI extends HTMLElement {
-    static is = "todo-list-ui";
+    static is = "todo-list-ui-vue";
 
     private root:ShadowRoot;
+    private wrapper:Vue;
 
     @Bind({
         sourceComponentName:"TodoDataBroker",
         sourceComponentPropertyName:"todoList"
     })
-    private _todoList: Todo[];
+    private _todoList:Todo[];
 
     @Discover.Field({
         description:'Title of todo list'
@@ -32,13 +35,31 @@ class TodoListUI extends HTMLElement {
         this.root = this.attachShadow({ mode: 'open' });
         this.listTitle  = 'My Todo List';
         this._todoList = [];
+
+        this.wrapper = new Vue({
+            name: 'shadow-root',
+            data () {
+                return {
+                    props: {},
+                    slotChildren: []
+                }
+            },
+            render (h) {
+              return h(VueComponent, {
+                ref: 'inner'
+              })
+            }
+        });
     }
 
     connectedCallback () {
-        //subscribePropertyChange(this._id, this.handlePropertyUpdate.bind(this));
         subscribeComponentTraceLog(this.handlePropertyUpdate.bind(this));
 
-        this.updateUI();
+        const wrapper = this.wrapper;
+
+        wrapper.$mount();
+        console.log(wrapper.$el);
+        this.shadowRoot?.appendChild(wrapper.$el);
     }
 
     disconnectedCallback () {
@@ -55,34 +76,7 @@ class TodoListUI extends HTMLElement {
 
     @Renderer
     updateUI() {
-        console.log(this._todoList);
-
         
-        const renderedItems = this._todoList.map((item: Todo) => {
-            return html`
-                <li>
-                    <div>${item.status} - ${item.title}</div>
-                </li>
-            `;
-        });
-
-        render(
-            html`
-                <style>
-                    .todo-list {
-                        font-family: sans-serif;
-                    }
-                </style>
-                <div class="todo-list">
-                    <h2 class="title">${this.listTitle}</h2>
-                    <ul class="">
-                        
-                        <div>${renderedItems}</div>
-                    </ul>
-                </div>
-            `,
-        this.root);
-    
     }
 }
 

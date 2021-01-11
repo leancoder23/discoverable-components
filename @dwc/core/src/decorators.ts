@@ -34,17 +34,6 @@ interface ISubscriptions {
 interface IdwcClassMetadata {
     name: string;
     description?: string;
-    /**
-    *When set true then component will not be registered in component registory and will not notify and be available to other component when it is connected
-    *Typical use case for this component is developer tool component
-    * @type {Boolean}
-    * @memberof IdwcClassMetadata
-    */
-    isNonDiscoverable?: Boolean;
-    /**
-     * When this flag is set to true then only once instance of this component will be created in the system
-     */
-    allowOnlySingleInstance?:Boolean;
 }
 /**
  * Extend  a component and makes it discoverable to other component
@@ -52,6 +41,9 @@ interface IdwcClassMetadata {
  */
 export function discoverableWebComponent(dwcClassMetadata: IdwcClassMetadata) {
     return function <T extends { new(...args: any[]): {} }>(target: T) {
+
+        addOnConnectedHook(target);
+        addOnDisconnectedHook(target);
 
         //TODO: handle property change event specific to property not on entire component instance level
         target.prototype.setBindedProperty = function (this: any, sourceInstance: any, binderInfo: IBinderMetadata): Boolean {
@@ -127,30 +119,30 @@ export function discoverableWebComponent(dwcClassMetadata: IdwcClassMetadata) {
             }
         }
 
-        const validateRequiredSetup = () => {
-            let targetPrototype = target.prototype;
-            if (!Reflect.getMetadata(onConnectedMethodMetadataKey, targetPrototype)) {
-                throw new Error(`No OnConnected life cycle method is specified for [${targetPrototype.constructor.name}]`);
+        const validateRequiredSetup = (instance) => {
+            if(ComponentManager.checkIfComponentIntanceExists(dwcClassMetadata.name)){
+                logger.error(`Duplicate instance of discoverable component named ${dwcClassMetadata.name} is not allowed`);
+                throw new Error(`Only single instance of ${dwcClassMetadata.name} is allowed`)
             }
-            if (!Reflect.getMetadata(onDisconnectedMethodMetadataKey, targetPrototype)) {
-                throw new Error(`No OnDisconnected life cycle method is specified for [${targetPrototype.constructor.name}]`);
-            }
+
+            //throw error is decorator is applied to a class which is not inherited from webcomponent
+            if (!(instance instanceof HTMLElement)) {
+                logger.debug(`Discover component decorator can only be applied to a component which is derived from HTMLElement (webcomponent)`);
+                throw new Error(`Discover component decorator can only be applied to a component which is derived from HTMLElement (webcomponent)`)
+           }
         }
 
         //extend the class and override its constructor  check here all the valid methods and required for this component
         return class extends target {
             [subscriptionSymbol]: ISubscriptions;
             constructor(...args: any[]) {
-                if(dwcClassMetadata.allowOnlySingleInstance 
-                    && ComponentManager.checkIfComponentIntanceExists(dwcClassMetadata.name)){
-                    logger.error(`Trying to create duplicate instance of the singleton component named ${dwcClassMetadata.name}`);
-                    throw new Error(`Only single instance of ${dwcClassMetadata.name} is allowed`)
-                }
                 super(args);
+
+                validateRequiredSetup(this);
+
                 //Add unique identifier for the discoverable component to keep track in component registory
                 this[uniqueIdSymbol] = Math.random().toString(36).substr(2, 9);
                 this[componentMetadataKey] = { type: target, ...dwcClassMetadata };
-                validateRequiredSetup();
                 this[subscriptionSymbol] = {};
                 this["populatePropertyBinding"] = debounce(this["populatePropertyBinding"].bind(this));
             }
@@ -187,45 +179,30 @@ function assertInvalidMethod(target: any, key: string, descriptor: PropertyDescr
 }
 
 /**
- * Extends component life cycle method - 
- * When this method is called component register the instance and raise events to make inform other component its availability
- * If component binds properties of other discoverable component then this, the neccessary hooks are attached here 
+ * This method enhances the webcomponent connectedCallback method   
+ * Use this function from discoverableWebComponent to registor the component call necessary methods for property binding
  *
- * @export
- * @param {*} target
- * @param {string} key
- * @param {PropertyDescriptor} descriptor
+ * @param {*} classDescriptor
  */
-export function OnConnected(target: any, key: string, descriptor: PropertyDescriptor) {
-    assertInvalidMethod(target, key, descriptor);
+function addOnConnectedHook(classDescriptor){
+    let originalConnectedCallback: PropertyDescriptor|undefined;
+    originalConnectedCallback = Reflect.getOwnPropertyDescriptor(classDescriptor.prototype,'connectedCallback');
 
-    let onConnectedMethodMetadata: Object = Reflect.getMetadata(onConnectedMethodMetadataKey, target);
-    if (onConnectedMethodMetadata) {
-        throw new Error(`Duplicate OnConnected life cycle method for ${target.constructor.name}`);
-    }
-    //Just save the metadata key on the instance
-    Reflect.defineMetadata(onConnectedMethodMetadataKey, key, target);
-
-    let originalMethod = descriptor.value;
-    descriptor.value = function (this: any, ...args: any[]) {
-        //execute the user implementation
-        originalMethod.apply(this, args);
+    //update the connected callback method of the component
+    classDescriptor.prototype.connectedCallback = function(this:any){
 
         //Set html element unique id so that it can be used as DOM element selector by tools such as dev-tools
-        //TODO: consider sitution for other type of component such as react or vue
-        if (this instanceof HTMLElement) {
-            this.setAttribute('dwc-id', this[uniqueIdSymbol]);
-        }
+        this.setAttribute('dwc-id', this[uniqueIdSymbol]);
 
         //if component has bind property to any other discoverable component property then set the binding and populate the property here
         this.populatePropertyBinding();
 
-        //if a class has external binder then subscribe the component registory change and run the propertys
+         //if a class has external binder then subscribe the component registory change and run the propertys
         const componentRegistoryChangeEventHandler = () => {
 
             this.populatePropertyBinding();
         }
-        if (Reflect.getMetadata(binderInfoMetaKey, target)) {
+        if (Reflect.getMetadata(binderInfoMetaKey, classDescriptor.prototype)) {
             let topic = ComponentManager.subscribeComponentRegistoryUpdate(componentRegistoryChangeEventHandler);
             //add to subscription list so that it can be cleaned up later
             this[subscriptionSymbol][topic] = componentRegistoryChangeEventHandler;
@@ -240,31 +217,22 @@ export function OnConnected(target: any, key: string, descriptor: PropertyDescri
             classMetadata: componentMetadata
         });
 
+        //execute user defined callback logic
+        originalConnectedCallback?.value.apply(this);
     }
 }
 
 /**
- * Extends component life cycle method - when component is no longer available
- * Here we perform all the clean operations such as deregistering event handler and notify other component that component is no longer available
+ * This method enhances the webcomponent disconnectedCallback method   
+ * Use this function from discoverableWebComponent to perform cleanup (e.g. deregistor from registory, clear up property binding) when component is removed from DOM
  *
- * @export
- * @param {*} target
- * @param {string} key
- * @param {PropertyDescriptor} descriptor
+ * @param {*} classDescriptor
  */
-export function OnDisconnected(target: any, key: string, descriptor: PropertyDescriptor) {
-    assertInvalidMethod(target, key, descriptor);
+function addOnDisconnectedHook(classDescriptor){
+    let originalDisconnectedCallback:PropertyDescriptor | undefined;
+    originalDisconnectedCallback=Reflect.getOwnPropertyDescriptor(classDescriptor.prototype,'disconnectedCallback');
 
-    let onDisconnectedMethodMetadata: Object = Reflect.getMetadata(onDisconnectedMethodMetadataKey, target);
-    if (onDisconnectedMethodMetadata) {
-        throw new Error(`Duplicate OnDisconnected life cycle method for ${target.constructor.name}`);
-    }
-    //Just save the metadata key on the instance
-    Reflect.defineMetadata(onDisconnectedMethodMetadataKey, key, target);
-
-
-    let originalMethod = descriptor.value;
-    descriptor.value = function (this: any, ...args: any[]) {
+    classDescriptor.prototype.disconnectedCallback =function(this:any){
         //Remove all the subscriptions for this component
         let subscriptions = (<ISubscriptions>this[subscriptionSymbol]);
         Object.keys(subscriptions).forEach(topic => {
@@ -273,12 +241,10 @@ export function OnDisconnected(target: any, key: string, descriptor: PropertyDes
         })
         ComponentManager.deRegisterComponent(this[uniqueIdSymbol]);
         //execute the user implementation
-        originalMethod.apply(this);
-
+        originalDisconnectedCallback?.value.apply(this);
     }
 
 }
-
 
 interface IdwcApiMetadata {
     description: string
@@ -297,29 +263,6 @@ function discoverableMethod(dwcApiMetadata: IdwcApiMetadata) {
         let originalMethod = descriptor.value;
         descriptor.value = function (this: any, ...args: any[]) {
             let result = originalMethod.apply(this, args);
-
-            if (ComponentManager.isTracelogSubscriberAvailable()) {
-
-                StackTrace.get().then((stackFrames) => {
-                    // now fire a method to log the calls
-                    let s = {
-                        date: new Date(),
-                        type: TraceLogType.METHOD_CALL,
-                        targetId: this[uniqueIdSymbol],
-                        payload: {
-                            methodName: key,
-                            args: args,
-                            result: result,
-                            stackFrames: stackFrames.map(sf=>sf.toString())
-                        }
-                    };
-                    logger.debug(s);
-                    ComponentManager.fireComponentTraceLog(s);
-                });
-
-
-            }
-
             return result;
         }
         ComponentManager.registerMethod(target, key, dwcApiMetadata);
@@ -348,21 +291,6 @@ function discoverableProperty(dwcApiMetadata?: IdwcApiMetadata) {
             const setter = function (this: any, val: any) {
                 if (this[propPrivateKey] != val) {
                     this[propPrivateKey] = val;
-
-                    // now fire a method to log the calls
-                    ComponentManager.fireComponentTraceLog({
-                        date: new Date(),
-                        type: TraceLogType.PROPERTY_CHANGE,
-                        targetId: this[uniqueIdSymbol],
-                        payload: {
-                            property: key,
-                            value: val
-                        }
-                    });
-
-                    //Call the change event on the object
-                    ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol]);
-
                 }
             };
 
@@ -376,19 +304,6 @@ function discoverableProperty(dwcApiMetadata?: IdwcApiMetadata) {
                 let originalSetter = descriptor.set;
                 descriptor.set = function (this: any, val) {
                     originalSetter.call(this, val);
-                    // now fire a method to log the calls
-                    ComponentManager.fireComponentTraceLog({
-                        date: new Date(),
-                        type: TraceLogType.PROPERTY_CHANGE,
-                        targetId: this[uniqueIdSymbol],
-                        payload: {
-                            property: key,
-                            value: val
-                        },
-
-                    });
-
-                    ComponentManager.firePropertyChangeEvent(this[uniqueIdSymbol]);
                 }
                 Object.defineProperty(target, key, descriptor);
             }

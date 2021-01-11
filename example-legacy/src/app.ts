@@ -5,14 +5,14 @@ import{
     Renderer,
     Bind,
     Discover,
-    OnConnected,
-    OnDisconnected
+    invokeMethodByComponentName
 } from '@dwc/core';
+
+
 
 @Discover.Component({
     name:'MyApp',
-    description:'Test Decorator',
-    allowOnlySingleInstance:true
+    description:'Test Decorator'
 })
 export class MyApp extends HTMLElement {
 
@@ -64,18 +64,13 @@ export class MyApp extends HTMLElement {
        
     }
 
-    @OnConnected
     connectedCallback(){    
         console.log('[app] my app component is loaded in the dom');
 
         this.setAttribute('id',this.uniqueId);
         this.updateUI();
     }
-
-    @OnDisconnected
-    disconnectedCallback() {
-        //Perform cleanup here
-    } 
+ 
 
     attributeChangedCallback(name:string, oldValue:any, newValue:any){
         if(oldValue!==newValue)
@@ -129,6 +124,8 @@ export class MyApp extends HTMLElement {
                         <strong>Counter:</strong>${this.counter}
                         <button @click=${(event:any)=>this.onClick(event)}>Counter</button>
                         <button @click=${(event:any)=>this.onClose(event)}>close</button>
+
+                        <button @click=${(event:any)=>invokeMethodByComponentName(this,'TestCMP','performMagicStuff')}>invoke performMagicStuff at test component</button>
                     </div>
                 </div>`,this.root);
     }

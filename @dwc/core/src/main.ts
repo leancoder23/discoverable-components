@@ -1,9 +1,7 @@
 import { 
     Discover, 
     Renderer, 
-    Bind, 
-    OnConnected,
-    OnDisconnected 
+    Bind
 } from './decorators';
 
 import { 
@@ -12,6 +10,8 @@ import {
     unsubscribeComponentRegistoryUpdate,
     subscribeComponentTraceLog,
     invokeMethod,
+    invokeMethodByComponentName,
+    setPropertyByComponentName,
     setProperty,
     getAvailableMethods,
     getAvailableProperties
@@ -23,9 +23,7 @@ export {
     // decorators
     Discover,
     Renderer,
-    Bind, 
-    OnConnected,
-    OnDisconnected,
+    Bind,
 
     // component manager
     getAllAvailableComponentInfo,
@@ -33,6 +31,8 @@ export {
     unsubscribeComponentRegistoryUpdate,
     subscribeComponentTraceLog,
     invokeMethod,
+    invokeMethodByComponentName,
+    setPropertyByComponentName,
     setProperty,
     getAvailableMethods,
     getAvailableProperties,

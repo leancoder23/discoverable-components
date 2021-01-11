@@ -76,6 +76,9 @@ class DwcDevTools extends HTMLElement {
         this.root = this.attachShadow({ mode: 'open' });    
     }
 
+    /**Important ::: this is a manadatory flag to determine by component manager that source when a method invoked of any component */
+    public isDwcDevTool:Boolean=true;
+
     /**
      * Standard Webcomponent lifecycle hook
      */
@@ -155,13 +158,13 @@ class DwcDevTools extends HTMLElement {
     updatePropertyValue(comp: IDiscoveredComponent, propertyName: string, value: string):void {
         logger.debug(`update property "${propertyName}" to new value "${value}" on component "${comp.name}"`);
 
-        setProperty(comp.id, propertyName, value);
+        setProperty(this,comp.id, propertyName, value);
     }
 
     executeFunction(comp: IDiscoveredComponent, methodName: string):void {
         logger.debug(`execute method "${methodName}" on component "${comp.name}"`);
 
-        invokeMethod(comp.id, methodName);
+        invokeMethod(this,comp.id, methodName);
     }
 
     private getDiscoveredComponents():Array<IDiscoveredComponent> {

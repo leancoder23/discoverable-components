@@ -9,23 +9,19 @@ import 'reflect-metadata';
 import * as  ComponentManager from './component-manager';
 import { EventBus } from './event-bus';
 
-import { TraceLogType } from './@types/trace-log';
+import {DwcStore} from './dwc-store';
 
-import StackTrace from 'stacktrace-js'
 
 /**
  * hidden property for component unique id
  */
-const uniqueIdSymbol = Symbol("uniqueId");
+const uniqueIdSymbol:symbol =  DwcStore.getInstance().uniqueIdSymbol ;
 /**
  * hidden property for component subscription
  */
-const subscriptionSymbol = Symbol("subscriptions");
-
-const renderMetadataKey = Symbol("renderer");
-const onConnectedMethodMetadataKey = Symbol("onConnectedMethodMetadataKey");
-const onDisconnectedMethodMetadataKey = Symbol("onDisconnectedMethodMetadataKey");
-const componentMetadataKey = Symbol("componentMetadata");
+const subscriptionSymbol:symbol =  DwcStore.getInstance().subscriptionSymbol ;
+const renderMetadataKey:symbol =  DwcStore.getInstance().renderMetadataKey ;
+const componentMetadataKey:symbol =  DwcStore.getInstance().componentMetadataKey ;
 
 interface ISubscriptions {
     [key: string]: Function;
@@ -134,7 +130,7 @@ export function discoverableWebComponent(dwcClassMetadata: IdwcClassMetadata) {
 
         //extend the class and override its constructor  check here all the valid methods and required for this component
         return class extends target {
-            [subscriptionSymbol]: ISubscriptions;
+           // [subscriptionSymbol]: ISubscriptions;
             constructor(...args: any[]) {
                 super(args);
 

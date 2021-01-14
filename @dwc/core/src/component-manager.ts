@@ -11,20 +11,14 @@ import { EventBus } from './event-bus';
 import { BusEvent } from './@types/bus-event';
 import { TraceLogType } from './@types/trace-log';
 
+import {DwcStore} from './dwc-store';
 
 interface IComponentRegistory {
     [key: string]: IComponentDescriptor;
 }
 
-let _componentRegistory: IComponentRegistory = {};
 
-// ensure component registry is only initiated once globally
-declare const window: any; // TODO could be solved better
-if (window?.dwcRegistory) {
-    _componentRegistory = window.dwcRegistory
-} else if (window) {
-    window.dwcRegistory = _componentRegistory;
-}
+let _componentRegistory: IComponentRegistory = DwcStore.getInstance().componentRegistory ;
 
 interface IComponentDescriptor {
     /**
@@ -85,11 +79,7 @@ export function deRegisterComponent(identifier: string) {
 
 }
 
-if (!window?.dwcMethodMetadataKey) {
-    window.dwcPropertyMetadataKey = Symbol('properties');
-}
-
-const propertyMetadataKey = window.dwcPropertyMetadataKey;
+const propertyMetadataKey = DwcStore.getInstance().propertyMetadataKey
 
 /**
  * Register specific property at class metadata level in order to fetch that information later
@@ -112,11 +102,7 @@ export function registerProperty(target: Object, propertyKey: string, metadataIn
     }
 }
 
-if (!window?.dwcMethodMetadataKey) {
-    window.dwcMethodMetadataKey = Symbol('methods');
-}
-
-const methodMetadataKey = window.dwcMethodMetadataKey;
+const methodMetadataKey = DwcStore.getInstance().methodMetadataKey;
 /**
  * Register specific method  at class metadata level in order to fetch that information later
  * @param target Class prototype object

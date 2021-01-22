@@ -1,10 +1,13 @@
 import Vue from 'vue';
+import wrap from '@vue/web-component-wrapper';
 
 import { 
     Discover,
     Renderer,
     Bind,
-    subscribeComponentTraceLog
+    subscribeComponentTraceLog,
+    invokeMethod,
+    getAllAvailableComponentInfo
 } from '@dwc/core';
 
 import VueComponent from './app.vue';
@@ -26,21 +29,30 @@ class TodoListUI extends HTMLElement {
     private _todoList:Todo[];
 
     @Discover.Field({
-        description:'Title of todo list'
+        description:'Name of the Company'
     })
-    listTitle:String = '';
+    company:String = '';
+
+    @Discover.Field({
+        description:'todoBrokerDataID'
+    })
+    todoBrokerDataID:string = '';
 
     constructor() {
         super();
         this.root = this.attachShadow({ mode: 'open' });
-        this.listTitle  = 'My Todo List';
+        this.todoBrokerDataID = getAllAvailableComponentInfo()[0].identifier;
+        this.company  = 'Deloitte Digital';
         this._todoList = [];
-
+        const self = this;
         this.wrapper = new Vue({
             name: 'shadow-root',
             data () {
                 return {
-                    props: {},
+                    props: {
+                        company: self.company,
+                        todoList: self._todoList
+                    },
                     slotChildren: []
                 }
             },
@@ -54,16 +66,22 @@ class TodoListUI extends HTMLElement {
 
     connectedCallback () {
         subscribeComponentTraceLog(this.handlePropertyUpdate.bind(this));
-
         const wrapper = this.wrapper;
-
         wrapper.$mount();
-        console.log(wrapper.$el);
+        this.company = wrapper.$data.props.company;
+        wrapper.$refs.inner['content'] = this.company;
+        wrapper.$refs.inner['list'] = this._todoList;
         this.shadowRoot?.appendChild(wrapper.$el);
     }
 
     disconnectedCallback () {
 
+    }
+    @Discover.Method({
+        description:'Trigger addTodoItem from data broker'
+    })
+    triggerAddTodoItem () {
+        invokeMethod(this.todoBrokerDataID, 'addTodoItem')
     }
 
     handlePropertyUpdate():void {
@@ -76,7 +94,8 @@ class TodoListUI extends HTMLElement {
 
     @Renderer
     updateUI() {
-        
+        this.wrapper.$refs.inner['content'] = this.company;
+        this.wrapper.$refs.inner['list'] = this._todoList;
     }
 }
 

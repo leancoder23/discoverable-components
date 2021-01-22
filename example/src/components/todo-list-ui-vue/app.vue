@@ -1,12 +1,19 @@
 <template>
-    <div>Yay, it works: {{ message }}</div>
+    <div>Yay, it works:  Hello {{message}} 
+        <br/>
+    content : {{content}} 
+    <br/>
+    list : {{list}} 
+    </div>
 </template>
 
 <script>
 export default {
     data () {
         return {
-            message: "my message"
+            message: "my message",
+            content: {},
+            list: []
         }
     },
     mounted () {
